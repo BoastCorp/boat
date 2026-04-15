@@ -24,7 +24,7 @@ local Config = {
         closeThreshold = 8,
         minLoopLength = 15,
     },
-    WakeMaxLength = 80,
+    WakeMaxLength = 110,
     RefreshRate = 50,
 }
 
@@ -49,6 +49,14 @@ local State = {
 -- ---------------------------------------------------------
 playdate.display.setRefreshRate(Config.RefreshRate)
 
+-- Load water assets (4 layers, same as Rowbot Rally)
+local waterBg          = gfx.image.new('images/water/water_bg')
+local causticsOverlay  = gfx.image.new('images/water/caustics_overlay')
+local causticsTable    = gfx.imagetable.new('images/water/caustics')
+local waterTable       = gfx.imagetable.new('images/water/water')
+local waterFrameCount  = waterTable and waterTable:getLength() or 0
+local waterFrameTime   = 0
+
 -- Spawn fish at static positions around origin
 for i = 1, Config.Fish.count do
     local angle = (i / Config.Fish.count) * 2 * math.pi
@@ -64,13 +72,11 @@ end
 -- Utilities
 -- ---------------------------------------------------------
 
--- Isometric projection: world coords -> screen coords
+-- Top-down projection: world coords -> screen coords
 local function project(wx, wy)
     local rx = wx - State.boat.x
     local ry = wy - State.boat.y
-    local ix = (rx - ry)
-    local iy = (rx + ry) / 2
-    return Config.Screen.cx + ix, Config.Screen.cy + iy
+    return Config.Screen.cx + rx, Config.Screen.cy + ry
 end
 
 -- Ray-casting point-in-polygon. poly is a list of tables with .wx/.wy fields.
@@ -111,13 +117,13 @@ local function updateInput()
     boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * accel
     boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * accel
 
-    -- Apply velocity to position (isometric transform)
-    boat.x = boat.x + (boat.velocity_y + (boat.velocity_x / 2))
-    boat.y = boat.y + (boat.velocity_y - (boat.velocity_x / 2))
+    -- Apply velocity to position (top-down)
+    boat.x = boat.x + boat.velocity_x
+    boat.y = boat.y + boat.velocity_y
 
     -- Record stern position for wake trail
-    local fwd_x = boat.velocity_y + boat.velocity_x / 2
-    local fwd_y = boat.velocity_y - boat.velocity_x / 2
+    local fwd_x = boat.velocity_x
+    local fwd_y = boat.velocity_y
     local fwd_len = math.sqrt(fwd_x * fwd_x + fwd_y * fwd_y)
     if fwd_len > 0 then
         fwd_x = fwd_x / fwd_len
@@ -220,6 +226,36 @@ local function drawBoat(x, y, angle)
 end
 
 local function drawContent()
+    -- Water layers (matches Rowbot Rally order)
+    local bx, by = State.boat.x, State.boat.y
+    local frame = (math.floor(waterFrameTime / 11.72) % waterFrameCount) + 1
+
+    -- 1. Static base
+    if waterBg then waterBg:draw(0, 0) end
+
+    -- 2. Animated caustics (slow pan, opposite to boat direction)
+    if causticsTable then
+        local img = causticsTable:getImage(frame)
+        if img then
+            local px = ((-math.floor(bx / 4) * 2) % 400) - 400
+            local py = ((-math.floor(by / 4) * 2) % 240) - 240
+            img:draw(px, py)
+        end
+    end
+
+    -- 3. Caustics overlay (static, camera-locked)
+    if causticsOverlay then causticsOverlay:draw(0, 0) end
+
+    -- 4. Animated water (faster pan, opposite to boat direction)
+    if waterTable then
+        local img = waterTable:getImage(frame)
+        if img then
+            local px = ((-bx * 0.8) % 400) - 400
+            local py = ((-by * 0.8) % 240) - 240
+            img:draw(px, py)
+        end
+    end
+
     gfx.setColor(gfx.kColorBlack)
 
     -- Draw wake as simple lines (fast, no polygon building)
@@ -259,6 +295,8 @@ end
 -- ---------------------------------------------------------
 function playdate.update()
     updateInput()
+
+    waterFrameTime = waterFrameTime + 1
     gfx.clear()
     drawContent()
 end
