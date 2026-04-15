@@ -36,6 +36,8 @@ local State = {
         x = 0,
         y = 0,
         angle = 0,
+        velocity_x = 0,  -- Momentum in world space
+        velocity_y = 0,
     },
     wake = {},
     fish = {},
@@ -98,17 +100,24 @@ local function updateInput()
     local crankChange = playdate.getCrankChange()
     boat.angle = boat.angle + crankChange
 
-    -- Constant forward movement
+    -- Target velocity based on current angle (where boat wants to go)
     local angle_rad = math.rad(boat.angle - 90)
-    local dx = math.cos(angle_rad) * Config.Boat.speed
-    local dy = math.sin(angle_rad) * Config.Boat.speed
+    local target_vx = math.cos(angle_rad) * Config.Boat.speed
+    local target_vy = math.sin(angle_rad) * Config.Boat.speed
 
-    boat.x = boat.x + (dy + (dx / 2))
-    boat.y = boat.y + (dy - (dx / 2))
+    -- Smoothly lerp velocity toward target (momentum/inertia)
+    -- Higher value = snappier response, lower = more drifty
+    local accel = 0.15
+    boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * accel
+    boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * accel
+
+    -- Apply velocity to position (isometric transform)
+    boat.x = boat.x + (boat.velocity_y + (boat.velocity_x / 2))
+    boat.y = boat.y + (boat.velocity_y - (boat.velocity_x / 2))
 
     -- Record stern position for wake trail
-    local fwd_x = dy + dx / 2
-    local fwd_y = dy - dx / 2
+    local fwd_x = boat.velocity_y + boat.velocity_x / 2
+    local fwd_y = boat.velocity_y - boat.velocity_x / 2
     local fwd_len = math.sqrt(fwd_x * fwd_x + fwd_y * fwd_y)
     if fwd_len > 0 then
         fwd_x = fwd_x / fwd_len
