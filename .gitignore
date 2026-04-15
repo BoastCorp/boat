@@ -1,0 +1,11 @@
+# Playdate
+*.pdx
+*.pdx.zip
+Games/
+Screenshots/
+Data/
+.sentry-native/
+
+# OS
+.DS_Store
+Thumbs.db
