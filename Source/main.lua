@@ -57,6 +57,10 @@ local waterTable       = gfx.imagetable.new('images/water/water')
 local waterFrameCount  = waterTable and waterTable:getLength() or 0
 local waterFrameTime   = 0
 
+-- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
+local boatSprites = gfx.imagetable.new('images/boat/boat')
+local shadowSprites = gfx.imagetable.new('images/boat/shadow')
+
 -- Spawn fish at static positions around origin
 for i = 1, Config.Fish.count do
     local angle = (i / Config.Fish.count) * 2 * math.pi
@@ -111,11 +115,13 @@ local function updateInput()
     local target_vx = math.cos(angle_rad) * Config.Boat.speed
     local target_vy = math.sin(angle_rad) * Config.Boat.speed
 
-    -- Smoothly lerp velocity toward target (momentum/inertia)
+    -- Smoothly lerp velocity toward target (momentum/inertia with drift)
     -- Higher value = snappier response, lower = more drifty
-    local accel = 0.15
-    boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * accel
-    boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * accel
+    -- Reduced to 0.05 for pronounced physics-based boat drift
+    -- This allows velocity direction to lag significantly behind heading, creating dramatic slip
+    local slip = 0.05
+    boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * slip
+    boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * slip
 
     -- Apply velocity to position (top-down)
     boat.x = boat.x + boat.velocity_x
@@ -182,47 +188,31 @@ end
 -- ---------------------------------------------------------
 -- Rendering
 -- ---------------------------------------------------------
+local function getSpriteFrame(angle)
+    -- Normalize angle to 1-360 range and return frame index
+    local normalized = angle % 360
+    if normalized < 0 then
+        normalized = normalized + 360
+    end
+    local frameIndex = math.floor(normalized + 0.5)
+    if frameIndex == 0 then frameIndex = 360 end
+    if frameIndex > 360 then frameIndex = 360 end
+    return frameIndex
+end
+
 local function drawBoat(x, y, angle)
-    local cfg = Config.Boat
-    local w, l = cfg.size.w, cfg.size.l
+    -- Draw boat sprite anchored at center
+    local frameIndex = getSpriteFrame(angle)
 
-    -- Hull: pointy bow, rectangular stern
-    local hullPoly = geometry.polygon.new(
-        0,    -l/2,
-        w/2,  -l/6,
-        w/2,   l/2,
-        -w/2,  l/2,
-        -w/2, -l/6
-    )
-    hullPoly:close()
+    -- Draw shadow sprite (offset by 7 pixels)
+    if shadowSprites and shadowSprites[frameIndex] then
+        shadowSprites[frameIndex]:drawAnchored(x + 7, y + 7, 0.5, 0.5)
+    end
 
-    -- Cabin
-    local cabinPoly = geometry.polygon.new(
-        -w/4, -l/10,
-         w/4, -l/10,
-         w/4,  l/4,
-        -w/4,  l/4
-    )
-    cabinPoly:close()
-
-    local t = geometry.affineTransform.new()
-    t:rotate(angle)
-    t:translate(x, y)
-    t:transformPolygon(hullPoly)
-    t:transformPolygon(cabinPoly)
-
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillPolygon(hullPoly)
-
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillPolygon(cabinPoly)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawPolygon(cabinPoly)
-
-    -- Mast
-    local p = geometry.point.new(0, -l/4)
-    t:transformPoint(p)
-    gfx.drawLine(x, y, p.x, p.y - 14)
+    -- Draw boat sprite anchored at center
+    if boatSprites and boatSprites[frameIndex] then
+        boatSprites[frameIndex]:drawAnchored(x, y, 0.5, 0.5)
+    end
 end
 
 local function drawContent()
@@ -281,9 +271,9 @@ local function drawContent()
         end
     end
 
-    -- Draw boat at screen center
-    local bx, by = project(State.boat.x, State.boat.y)
-    drawBoat(bx, by, State.boat.angle)
+    -- Draw boat (includes shadow with dithering) at screen center
+    local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
+    drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
 
     -- Score
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
