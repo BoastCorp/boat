@@ -61,14 +61,23 @@ local waterFrameTime   = 0
 local boatSprites = gfx.imagetable.new('images/boat/boat')
 local shadowSprites = gfx.imagetable.new('images/boat/shadow')
 
+-- Load fish images
+local fishImages = {
+    gfx.image.new('images/fish/clownfish'),
+    gfx.image.new('images/fish/stur'),
+    gfx.image.new('images/fish/anchovy'),
+}
+
 -- Spawn fish at static positions around origin
 for i = 1, Config.Fish.count do
     local angle = (i / Config.Fish.count) * 2 * math.pi
     local dist = 40 + math.random() * Config.Fish.spawnRadius
+    local randomFishType = math.random(1, #fishImages)
     State.fish[i] = {
         x = math.cos(angle) * dist,
         y = math.sin(angle) * dist,
         alive = true,
+        image = fishImages[randomFishType],
     }
 end
 
@@ -262,12 +271,11 @@ local function drawContent()
         end
     end
 
-    -- Draw fish (stationary circles)
-    gfx.setColor(gfx.kColorBlack)
+    -- Draw fish (stationary images)
     for _, f in ipairs(State.fish) do
-        if f.alive then
+        if f.alive and f.image then
             local fx, fy = project(f.x, f.y)
-            gfx.fillCircleAtPoint(fx, fy, Config.Fish.size)
+            f.image:drawAnchored(fx, fy, 0.5, 0.5)
         end
     end
 
