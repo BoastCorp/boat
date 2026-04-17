@@ -13,7 +13,7 @@ local Config = {
     Boat = {
         speed = 2.0,
         rotationSpeed = 5,
-        size = { w = 10, l = 18 }
+        size = { w = 80, l = 80 }
     },
     Fish = {
         count = 5,
@@ -116,10 +116,10 @@ local function updateInput()
     local target_vy = math.sin(angle_rad) * Config.Boat.speed
 
     -- Smoothly lerp velocity toward target (momentum/inertia with drift)
-    -- Higher value = snappier response, lower = more drifty
-    -- Reduced to 0.05 for pronounced physics-based boat drift
-    -- This allows velocity direction to lag significantly behind heading, creating dramatic slip
-    local slip = 0.05
+    -- Slip factor scaled relative to boat sprite size (80px) vs original polygon (18px)
+    -- Larger boat = more drift mass = lower slip value
+    local baseSlip = 0.125
+    local slip = baseSlip * (18 / Config.Boat.size.l)
     boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * slip
     boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * slip
 
