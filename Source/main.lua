@@ -15,7 +15,7 @@ local Config = {
         minTurnSpeed = 1.5,
         driftWeight = 0.15,
         rotationSpeed = 5,
-        size = { w = 80, l = 80 }
+        size = { w = 60, l = 60 }
     },
     Fish = {
         count = 5,
@@ -62,8 +62,8 @@ local waterFrameCount  = waterTable and waterTable:getLength() or 0
 local waterFrameTime   = 0
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
-local boatSprites = gfx.imagetable.new('images/boat/boat')
-local shadowSprites = gfx.imagetable.new('images/boat/shadow')
+local boatSprites = gfx.imagetable.new('images/boat/Boat60')
+local shadowSprites = gfx.imagetable.new('images/boat/Shadow60')
 
 -- Load fish images
 local fishImages = {
@@ -154,7 +154,7 @@ local function updateInput()
         fwd_y = fwd_y / fwd_len
     end
 
-    local sternOffset = Config.Boat.size.l / 2
+    local sternOffset = Config.Boat.size.l / 2 - 20
     local sternWx = boat.x - fwd_x * sternOffset
     local sternWy = boat.y - fwd_y * sternOffset
     local right_wx =  fwd_y
@@ -222,9 +222,9 @@ local function drawBoat(x, y, angle)
     -- Draw boat sprite anchored at center
     local frameIndex = getSpriteFrame(angle)
 
-    -- Draw shadow sprite (offset by 7 pixels)
+    -- Draw shadow sprite (offset by 5 pixels)
     if shadowSprites and shadowSprites[frameIndex] then
-        shadowSprites[frameIndex]:drawAnchored(x + 7, y + 7, 0.5, 0.5)
+        shadowSprites[frameIndex]:drawAnchored(x + 5, y + 5, 0.5, 0.5)
     end
 
     -- Draw boat sprite anchored at center
@@ -265,6 +265,7 @@ local function drawContent()
     end
 
     gfx.setColor(gfx.kColorBlack)
+    gfx.setLineWidth(2)
 
     -- Draw wake as simple lines (fast, no polygon building)
     local wake = State.wake
