@@ -11,7 +11,9 @@ math.randomseed(playdate.getSecondsSinceEpoch())
 local Config = {
     Screen = { cx = 200, cy = 120 },
     Boat = {
-        speed = 2.0,
+        baseSpeed = 3.5,
+        minTurnSpeed = 1.5,
+        driftWeight = 0.15,
         rotationSpeed = 5,
         size = { w = 80, l = 80 }
     },
@@ -36,6 +38,8 @@ local State = {
         x = 0,
         y = 0,
         angle = 0,
+        moveAngle = 0,
+        currentSpeed = 0,
         velocity_x = 0,  -- Momentum in world space
         velocity_y = 0,
     },
@@ -115,22 +119,27 @@ end
 local function updateInput()
     local boat = State.boat
 
-    -- Crank steers the boat
+    -- Crank steers the boat (visual angle)
     local crankChange = playdate.getCrankChange()
     boat.angle = boat.angle + crankChange
 
-    -- Target velocity based on current angle (where boat wants to go)
-    local angle_rad = math.rad(boat.angle - 90)
-    local target_vx = math.cos(angle_rad) * Config.Boat.speed
-    local target_vy = math.sin(angle_rad) * Config.Boat.speed
+    -- Calculate angular delta: how misaligned are nose and movement directions?
+    local angleDiff = math.abs((boat.angle - boat.moveAngle + 180) % 360 - 180)
 
-    -- Smoothly lerp velocity toward target (momentum/inertia with drift)
-    -- Slip factor scaled relative to boat sprite size (80px) vs original polygon (18px)
-    -- Larger boat = more drift mass = lower slip value
-    local baseSlip = 0.125
-    local slip = baseSlip * (18 / Config.Boat.size.l)
-    boat.velocity_x = boat.velocity_x + (target_vx - boat.velocity_x) * slip
-    boat.velocity_y = boat.velocity_y + (target_vy - boat.velocity_y) * slip
+    -- Apply speed penalty based on angular misalignment (cosine curve)
+    -- 0° difference = 1.0 (full speed)
+    -- 90° difference = 0.0 (clamped to 0.4 = 40% minimum speed)
+    local cosAngleDiff = math.cos(math.rad(angleDiff))
+    local dragFactor = math.max(0.4, cosAngleDiff)
+    boat.currentSpeed = Config.Boat.baseSpeed * dragFactor
+
+    -- Gradually align movement angle toward visual angle (drift)
+    boat.moveAngle = boat.moveAngle + (boat.angle - boat.moveAngle) * Config.Boat.driftWeight
+
+    -- Calculate velocity from movement angle at current speed
+    local moveAngle_rad = math.rad(boat.moveAngle - 90)
+    boat.velocity_x = math.cos(moveAngle_rad) * boat.currentSpeed
+    boat.velocity_y = math.sin(moveAngle_rad) * boat.currentSpeed
 
     -- Apply velocity to position (top-down)
     boat.x = boat.x + boat.velocity_x
