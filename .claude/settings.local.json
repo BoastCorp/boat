@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"/c/Users/o2ato/Downloads/clownfish.png\" \"/c/g/boat/Source/images/fish/\")",
+      "Bash(cp \"/c/Users/o2ato/Downloads/stur.png\" \"/c/g/boat/Source/images/fish/\")",
+      "Bash(cp \"/c/Users/o2ato/Downloads/anchovy.png\" \"/c/g/boat/Source/images/fish/\")"
+    ]
+  }
+}

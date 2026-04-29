@@ -45,7 +45,10 @@ local State = {
     },
     wake = {},
     fish = {},
-    score = 0,
+    money = 0,
+    roundDuration = 600,  -- 50 FPS * 12 seconds = 600 frames
+    roundTime = 0,
+    isPaused = false,
 }
 
 -- ---------------------------------------------------------
@@ -71,6 +74,9 @@ local fishImages = {
     gfx.image.new('images/fish/stur'),
     gfx.image.new('images/fish/anchovy'),
 }
+
+-- Load font for UI
+local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 
 -- Spawn fish at static positions around origin
 for i = 1, Config.Fish.count do
@@ -192,7 +198,7 @@ local function updateInput()
                 for _, f in ipairs(State.fish) do
                     if f.alive and pointInPolygon(f.x, f.y, poly) then
                         f.alive = false
-                        State.score = State.score + 1
+                        State.money = State.money + 1
                     end
                 end
                 -- Reset wake after catching
@@ -293,16 +299,69 @@ local function drawContent()
     local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
     drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
 
-    -- Score
+    -- Money display
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    gfx.drawText("Score: " .. State.score, 4, 4)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawText("$" .. State.money, 4, 4)
+
+    -- Timer (countdown from 12 to 0)
+    local remainingSeconds = math.ceil((State.roundDuration - State.roundTime) / 50)
+    if remainingSeconds < 0 then remainingSeconds = 0 end
+    gfx.setFont(roobert24)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawText(remainingSeconds, 360, 4)
+    gfx.setFont(nil)
+
+    -- Pause message (displayed over the game)
+    if State.isPaused then
+        gfx.setColor(gfx.kColorBlack)
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        gfx.setFont(roobert24)
+        gfx.drawText("Press B to continue", 40, 80)
+        gfx.drawText("or A to upgrade", 70, 120)
+        gfx.setFont(nil)
+    end
 end
 
 -- ---------------------------------------------------------
 -- Main Loop
 -- ---------------------------------------------------------
 function playdate.update()
-    updateInput()
+    -- Only update input and physics if not paused
+    if not State.isPaused then
+        updateInput()
+    end
+
+    -- Always increment round time
+    State.roundTime = State.roundTime + 1
+
+    -- Check if round is over
+    if State.roundTime >= State.roundDuration then
+        State.isPaused = true
+    end
+
+    -- Handle pause menu input (B to continue, A to upgrade)
+    if State.isPaused then
+        if playdate.buttonJustPressed(playdate.kButtonB) then
+            -- Reset round: clear wake and respawn fish
+            State.roundTime = 0
+            State.wake = {}
+            for i = 1, Config.Fish.count do
+                local angle = (i / Config.Fish.count) * 2 * math.pi
+                local dist = 40 + math.random() * Config.Fish.spawnRadius
+                local randomFishType = math.random(1, #fishImages)
+                State.fish[i] = {
+                    x = math.cos(angle) * dist,
+                    y = math.sin(angle) * dist,
+                    alive = true,
+                    image = fishImages[randomFishType],
+                }
+            end
+            State.isPaused = false
+        elseif playdate.buttonJustPressed(playdate.kButtonA) then
+            -- Placeholder for upgrade system
+        end
+    end
 
     waterFrameTime = waterFrameTime + 1
     gfx.clear()
