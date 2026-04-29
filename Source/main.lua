@@ -19,7 +19,7 @@ local Config = {
     },
     Fish = {
         count = 5,
-        spawnRadius = 80,
+        spawnRadius = 200,
         size = 4,
     },
     Catch = {
@@ -49,6 +49,7 @@ local State = {
     roundDuration = 600,  -- 50 FPS * 12 seconds = 600 frames
     roundTime = 0,
     isPaused = false,
+    currentScreen = "game",  -- "game" or "upgrade"
 }
 
 -- ---------------------------------------------------------
@@ -75,8 +76,9 @@ local fishImages = {
     gfx.image.new('images/fish/anchovy'),
 }
 
--- Load font for UI
+-- Load fonts for UI
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
+local roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 
 -- Spawn fish at static positions around origin
 for i = 1, Config.Fish.count do
@@ -324,28 +326,326 @@ local function drawContent()
 end
 
 -- ---------------------------------------------------------
+-- Upgrade Screen (Skill Tree)
+-- ---------------------------------------------------------
+import "CoreLibs/graphics"
+
+local ZOOM_MIN = 0.20
+local ZOOM_MAX = 2.0
+local ZOOM_THRESHOLD = 0.6
+local SCREEN_W = 400
+local SCREEN_H = 240
+local CENTER_X = SCREEN_W / 2
+local CENTER_Y = SCREEN_H / 2
+local SPACING = 65
+
+local UpgradeScreen = {
+    zoom = 1.0,
+    camX = 0,
+    camY = 0,
+    targetCamX = 0,
+    targetCamY = 0,
+    selectedNodeId = 1,
+    nodes = {},
+}
+
+local function addNode(id, xGrid, yGrid, cost)
+    UpgradeScreen.nodes[id] = {
+        id = id,
+        x = xGrid * SPACING,
+        y = yGrid * SPACING,
+        cost = cost,
+        active = false,
+        neighbors = {}
+    }
+end
+
+local function addLink(id1, id2)
+    table.insert(UpgradeScreen.nodes[id1].neighbors, id2)
+    table.insert(UpgradeScreen.nodes[id2].neighbors, id1)
+end
+
+-- Initialize skill tree nodes (from your code)
+addNode(1, 0, 0, 0)
+UpgradeScreen.nodes[1].active = true
+
+-- Left Grid
+addNode(2, 0, -1, 2)
+addNode(3, 1, -1, 2)
+addNode(4, 2, -1, 6)
+addNode(5, 0, -2, 7)
+addNode(6, 1, -2, 7)
+addNode(7, 2, -2, 18)
+addNode(8, 3, -2, 15)
+addNode(9,  0, -3, 25)
+addNode(10, 1, -3, 30)
+addNode(11, 2, -3, 20)
+addNode(12, 3, -3, 20)
+addNode(13, 4, -3, 40)
+addNode(14, 5, -3, 60)
+addNode(15, 6, -3, 60)
+addNode(16, 7, -3, 80)
+
+-- Top Right Extensions
+addNode(17, 4, -4, 50)
+addNode(18, 5, -4, 60)
+addNode(19, 6, -4, 60)
+addNode(20, 7, -4, 60)
+addNode(21, 6, -5, 65)
+addNode(22, 7, -5, 70)
+
+-- Bottom Right Wall Group
+addNode(23, 4, 0, 300)
+addNode(24, 4, -1, 350)
+addNode(25, 5, 0, 350)
+addNode(26, 5, -1, 425)
+addNode(27, 5, -2, 475)
+addNode(28, 4, 1, 400)
+addNode(29, 5, 1, 600)
+
+-- Wire connections
+addLink(1, 2); addLink(1, 23)
+addLink(2, 3); addLink(3, 4)
+addLink(5, 6); addLink(6, 7); addLink(7, 8)
+addLink(9, 10); addLink(10, 11); addLink(11, 12); addLink(12, 13)
+addLink(13, 14); addLink(14, 15); addLink(15, 16)
+addLink(17, 18); addLink(18, 19); addLink(19, 20)
+addLink(21, 22)
+addLink(23, 25); addLink(28, 29)
+addLink(2, 5); addLink(5, 9)
+addLink(3, 6); addLink(6, 10)
+addLink(4, 7); addLink(7, 11)
+addLink(8, 12)
+addLink(13, 17); addLink(14, 18)
+addLink(15, 19); addLink(19, 21)
+addLink(16, 20); addLink(20, 22)
+addLink(23, 24); addLink(25, 26); addLink(26, 27)
+addLink(23, 28); addLink(25, 29)
+
+local function isNeighborUnlocked(id)
+    if id == 1 then return true end
+    for _, neighborId in ipairs(UpgradeScreen.nodes[id].neighbors) do
+        if UpgradeScreen.nodes[neighborId].active then return true end
+    end
+    return false
+end
+
+local function moveGranular(dir)
+    local curr = UpgradeScreen.nodes[UpgradeScreen.selectedNodeId]
+    local bestDist = math.huge
+    local bestNodeId = nil
+
+    for _, nid in ipairs(curr.neighbors) do
+        local n = UpgradeScreen.nodes[nid]
+        local dx = n.x - curr.x
+        local dy = n.y - curr.y
+        local dist = math.abs(dx) + math.abs(dy)
+
+        local valid = false
+        if dir == "right" and dx > 0 then valid = true
+        elseif dir == "left" and dx < 0 then valid = true
+        elseif dir == "down" and dy > 0 then valid = true
+        elseif dir == "up" and dy < 0 then valid = true
+        end
+
+        if valid and dist < bestDist then
+            bestDist = dist
+            bestNodeId = nid
+        end
+    end
+
+    if bestNodeId then UpgradeScreen.selectedNodeId = bestNodeId end
+end
+
+local function snapToNearestCenter()
+    local bestDist = math.huge
+    local bestNodeId = UpgradeScreen.selectedNodeId
+
+    for id, n in pairs(UpgradeScreen.nodes) do
+        local dx = n.x - UpgradeScreen.camX
+        local dy = n.y - UpgradeScreen.camY
+        local dist = dx*dx + dy*dy
+        if dist < bestDist then
+            bestDist = dist
+            bestNodeId = id
+        end
+    end
+    UpgradeScreen.selectedNodeId = bestNodeId
+end
+
+local function drawUpgradeScreen()
+    gfx.clear(gfx.kColorWhite)
+
+    -- Handle Crank (Zoom)
+    local crankChange = playdate.getCrankChange()
+    if crankChange ~= 0 then
+        UpgradeScreen.zoom = UpgradeScreen.zoom + (crankChange * 0.005)
+        if UpgradeScreen.zoom < ZOOM_MIN then UpgradeScreen.zoom = ZOOM_MIN end
+        if UpgradeScreen.zoom > ZOOM_MAX then UpgradeScreen.zoom = ZOOM_MAX end
+    end
+
+    local isZoomedOut = (UpgradeScreen.zoom <= ZOOM_THRESHOLD)
+
+    -- Input Handling
+    if isZoomedOut then
+        local panSpeed = 20 / UpgradeScreen.zoom
+        if playdate.buttonIsPressed(playdate.kButtonUp) then UpgradeScreen.targetCamY = UpgradeScreen.targetCamY - panSpeed end
+        if playdate.buttonIsPressed(playdate.kButtonDown) then UpgradeScreen.targetCamY = UpgradeScreen.targetCamY + panSpeed end
+        if playdate.buttonIsPressed(playdate.kButtonLeft) then UpgradeScreen.targetCamX = UpgradeScreen.targetCamX - panSpeed end
+        if playdate.buttonIsPressed(playdate.kButtonRight) then UpgradeScreen.targetCamX = UpgradeScreen.targetCamX + panSpeed end
+
+        UpgradeScreen.camX = UpgradeScreen.camX + (UpgradeScreen.targetCamX - UpgradeScreen.camX) * 0.5
+        UpgradeScreen.camY = UpgradeScreen.camY + (UpgradeScreen.targetCamY - UpgradeScreen.camY) * 0.5
+        snapToNearestCenter()
+    else
+        if playdate.buttonJustPressed(playdate.kButtonUp) then moveGranular("up") end
+        if playdate.buttonJustPressed(playdate.kButtonDown) then moveGranular("down") end
+        if playdate.buttonJustPressed(playdate.kButtonLeft) then moveGranular("left") end
+        if playdate.buttonJustPressed(playdate.kButtonRight) then moveGranular("right") end
+
+        UpgradeScreen.targetCamX = UpgradeScreen.nodes[UpgradeScreen.selectedNodeId].x
+        UpgradeScreen.targetCamY = UpgradeScreen.nodes[UpgradeScreen.selectedNodeId].y
+        UpgradeScreen.camX = UpgradeScreen.camX + (UpgradeScreen.targetCamX - UpgradeScreen.camX) * 0.2
+        UpgradeScreen.camY = UpgradeScreen.camY + (UpgradeScreen.targetCamY - UpgradeScreen.camY) * 0.2
+    end
+
+    -- Draw Links
+    gfx.setLineWidth(math.max(1, 2 * UpgradeScreen.zoom))
+    for id, node in pairs(UpgradeScreen.nodes) do
+        local sx1 = (node.x - UpgradeScreen.camX) * UpgradeScreen.zoom + CENTER_X
+        local sy1 = (node.y - UpgradeScreen.camY) * UpgradeScreen.zoom + CENTER_Y
+        for _, nId in ipairs(node.neighbors) do
+            if nId > id then
+                local n2 = UpgradeScreen.nodes[nId]
+                local sx2 = (n2.x - UpgradeScreen.camX) * UpgradeScreen.zoom + CENTER_X
+                local sy2 = (n2.y - UpgradeScreen.camY) * UpgradeScreen.zoom + CENTER_Y
+                gfx.drawLine(sx1, sy1, sx2, sy2)
+            end
+        end
+    end
+
+    -- Draw Nodes
+    local nodeRadius = 12 * UpgradeScreen.zoom
+    local selRadius = 20 * UpgradeScreen.zoom
+
+    for id, node in pairs(UpgradeScreen.nodes) do
+        local sx = (node.x - UpgradeScreen.camX) * UpgradeScreen.zoom + CENTER_X
+        local sy = (node.y - UpgradeScreen.camY) * UpgradeScreen.zoom + CENTER_Y
+
+        if UpgradeScreen.zoom > ZOOM_THRESHOLD then
+            local labelText = (id == 1) and "START" or "$" .. node.cost
+            local textW = gfx.getTextSize(labelText)
+            gfx.drawText(labelText, sx - (textW/2), sy - (24 * UpgradeScreen.zoom))
+        end
+
+        if id == UpgradeScreen.selectedNodeId then
+            gfx.setLineWidth(math.max(2, 3 * UpgradeScreen.zoom))
+            gfx.drawCircleAtPoint(sx, sy, selRadius)
+        end
+
+        gfx.setLineWidth(math.max(1, 2 * UpgradeScreen.zoom))
+
+        if node.active then
+            gfx.setColor(gfx.kColorBlack)
+            gfx.fillCircleAtPoint(sx, sy, nodeRadius)
+        else
+            gfx.setColor(gfx.kColorWhite)
+            gfx.fillCircleAtPoint(sx, sy, nodeRadius)
+            gfx.setColor(gfx.kColorBlack)
+            gfx.drawCircleAtPoint(sx, sy, nodeRadius)
+        end
+    end
+
+    -- Draw UI Dashboard
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRect(0, 0, 400, 40)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawLine(0, 40, 400, 40)
+
+    gfx.setFont(roobert11)
+    gfx.drawText("UPGRADE SCREEN", 5, 5)
+    gfx.drawText("Wallet: $" .. State.money, 180, 5)
+
+    local selNode = UpgradeScreen.nodes[UpgradeScreen.selectedNodeId]
+    local costText = selNode.active and "OWNED" or "$" .. selNode.cost
+    gfx.drawText("Cost: " .. costText, 5, 22)
+
+    gfx.drawText("B: CONTINUE   A: SELECT", 100, 220)
+    gfx.setFont(nil)
+end
+
+-- ---------------------------------------------------------
 -- Main Loop
 -- ---------------------------------------------------------
 function playdate.update()
-    -- Only update input and physics if not paused
-    if not State.isPaused then
-        updateInput()
-    end
+    if State.currentScreen == "game" then
+        -- GAME SCREEN LOGIC
+        -- Only update input and physics if not paused
+        if not State.isPaused then
+            updateInput()
+        end
 
-    -- Always increment round time
-    State.roundTime = State.roundTime + 1
+        -- Always increment round time
+        State.roundTime = State.roundTime + 1
 
-    -- Check if round is over
-    if State.roundTime >= State.roundDuration then
-        State.isPaused = true
-    end
+        -- Check if round is over
+        if State.roundTime >= State.roundDuration then
+            State.isPaused = true
+        end
 
-    -- Handle pause menu input (B to continue, A to upgrade)
-    if State.isPaused then
+        -- Handle pause menu input (B to continue, A to upgrade)
+        if State.isPaused then
+            if playdate.buttonJustPressed(playdate.kButtonB) then
+                -- Reset round: clear wake, respawn fish, reset boat position
+                State.roundTime = 0
+                State.wake = {}
+                State.boat.x = 0
+                State.boat.y = 0
+                State.boat.angle = 0
+                State.boat.moveAngle = 0
+                State.boat.currentSpeed = 0
+                State.boat.velocity_x = 0
+                State.boat.velocity_y = 0
+                for i = 1, Config.Fish.count do
+                    local angle = (i / Config.Fish.count) * 2 * math.pi
+                    local dist = 40 + math.random() * Config.Fish.spawnRadius
+                    local randomFishType = math.random(1, #fishImages)
+                    State.fish[i] = {
+                        x = math.cos(angle) * dist,
+                        y = math.sin(angle) * dist,
+                        alive = true,
+                        image = fishImages[randomFishType],
+                    }
+                end
+                State.isPaused = false
+            elseif playdate.buttonJustPressed(playdate.kButtonA) then
+                -- Switch to upgrade screen
+                State.currentScreen = "upgrade"
+            end
+        end
+
+        waterFrameTime = waterFrameTime + 1
+        gfx.clear()
+        drawContent()
+
+    elseif State.currentScreen == "upgrade" then
+        -- UPGRADE SCREEN LOGIC
+        drawUpgradeScreen()
+
+        -- Handle upgrade screen input
         if playdate.buttonJustPressed(playdate.kButtonB) then
-            -- Reset round: clear wake and respawn fish
+            -- Return to game and start new round
+            State.currentScreen = "game"
             State.roundTime = 0
+            State.isPaused = false
             State.wake = {}
+            State.boat.x = 0
+            State.boat.y = 0
+            State.boat.angle = 0
+            State.boat.moveAngle = 0
+            State.boat.currentSpeed = 0
+            State.boat.velocity_x = 0
+            State.boat.velocity_y = 0
             for i = 1, Config.Fish.count do
                 local angle = (i / Config.Fish.count) * 2 * math.pi
                 local dist = 40 + math.random() * Config.Fish.spawnRadius
@@ -357,13 +657,8 @@ function playdate.update()
                     image = fishImages[randomFishType],
                 }
             end
-            State.isPaused = false
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
-            -- Placeholder for upgrade system
+            -- Select skill (placeholder for now)
         end
     end
-
-    waterFrameTime = waterFrameTime + 1
-    gfx.clear()
-    drawContent()
 end
