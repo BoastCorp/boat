@@ -214,6 +214,44 @@ end
 -- ---------------------------------------------------------
 -- Rendering
 -- ---------------------------------------------------------
+local function drawOffScreenFishIndicators()
+    -- Draw triangles pointing to off-screen fish
+    local margin = 15
+    gfx.setColor(gfx.kColorBlack)
+
+    for _, f in ipairs(State.fish) do
+        if f.alive then
+            local fx = f.x - State.boat.x
+            local fy = f.y - State.boat.y
+            local sx = Config.Screen.cx + fx
+            local sy = Config.Screen.cy + fy
+
+            -- Check if fish is off-screen
+            if sx < 0 or sx > 400 or sy < 0 or sy > 240 then
+                -- Clamp position to screen edge with margin
+                local clampedX = math.max(margin, math.min(400 - margin, sx))
+                local clampedY = math.max(margin, math.min(240 - margin, sy))
+
+                -- Calculate direction angle
+                local dx = sx - 200
+                local dy = sy - 120
+                local angle = math.atan2(dy, dx)
+
+                -- Draw small filled triangle pointing in the direction
+                local size = 6
+                local p1x = clampedX + math.cos(angle) * size
+                local p1y = clampedY + math.sin(angle) * size
+                local p2x = clampedX + math.cos(angle + 2.4) * size
+                local p2y = clampedY + math.sin(angle + 2.4) * size
+                local p3x = clampedX + math.cos(angle - 2.4) * size
+                local p3y = clampedY + math.sin(angle - 2.4) * size
+
+                gfx.fillPolygon(p1x, p1y, p2x, p2y, p3x, p3y)
+            end
+        end
+    end
+end
+
 local function getSpriteFrame(angle)
     -- Normalize angle to 1-360 range and return frame index
     local normalized = angle % 360
@@ -300,6 +338,9 @@ local function drawContent()
     -- Draw boat (includes shadow with dithering) at screen center
     local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
     drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
+
+    -- Draw indicators pointing to off-screen fish
+    drawOffScreenFishIndicators()
 
     -- Money display
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
@@ -563,8 +604,7 @@ local function drawUpgradeScreen()
     gfx.drawLine(0, 40, 400, 40)
 
     gfx.setFont(roobert11)
-    gfx.drawText("UPGRADE SCREEN", 5, 5)
-    gfx.drawText("Wallet: $" .. State.money, 180, 5)
+    gfx.drawText("Wallet: $" .. State.money, 5, 5)
 
     local selNode = UpgradeScreen.nodes[UpgradeScreen.selectedNodeId]
     local costText = selNode.active and "OWNED" or "$" .. selNode.cost
