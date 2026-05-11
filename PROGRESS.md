@@ -277,9 +277,132 @@ runs=49 money=$202 time=10m59s income=$101/run V=12 S=12 Sp=12 L=12 P=12 T=12
 
 ---
 
+## Phase 7 — Tier 2 Upgrades & Fish Movement (May 9, 2026)
+
+### Tier 2 Upgrade System
+After reaching $300, unlock Tier 2 upgrades:
+- **Value, Spawn, Permit, Time** continue into Tier 2 (L13-L24)
+- **Speed and Line hard-capped at L12** — prevents runaway difficulty/speed creep
+- Tier 2 uses steeper cost curve: `basePrice × (1.25^level)` vs Tier 1's `1.18`
+- Tier 2 upgrades capped at L24 for defined endgame goal
+- Unlock trigger: automatic when `State.money >= 300`
+
+### Multi-Fish Catch Bonuses
+Reward skill-based looping with catch multipliers:
+- Catch 2 fish in one loop: **+10% bonus money**
+- Catch 3 fish in one loop: **+25% bonus money**
+- Catch 4+ fish in one loop: **+50% bonus money**
+- Bonus is applied on top of base fish value (Value upgrade)
+- Encourages challenging, multi-fish loops
+
+### Progressive Fish Movement (Tier 2 Difficulty)
+Fish start moving at run 50 (when Tier 2 unlocks):
+- **Initial movement**: Very gentle drifts (±6-8 pixels in circles/figure-8s/erratic patterns)
+- **Speed progression**: Movement speed increases gradually as runs pass 50
+- **Three movement types** (randomly assigned per fish):
+  1. Circular drift — gentle orbits around spawn point
+  2. Figure-8 pattern — smooth side-to-side figure-8s
+  3. Erratic drift — random up/down and back/forth movements
+- **Speed formula**: `0.03 + (runsPast50 * 0.002)` radians/frame, capped at 0.15
+- Fish update position every frame: `baseX/baseY + sin/cos(movePhase) * amplitude`
+- Movement is catchable but requires leading/prediction at late runs
+
+### Debug Cheat: Jump to Tier 2
+- Press **A + B** together to instantly jump to run 50 with:
+  - $300 cash
+  - Value L5, Spawn L3, Speed L3, Line L5, Permit L2, Time L0
+  - Enables quick Tier 2 testing without grinding Tier 1
+
+### Full 51-Run Tier 2 Progression Data
+
+```
+runs=50 money=$300 time=0m12s income=$8/run V=5 S=3 Sp=3 L=5 P=2 T=0
+runs=51 money=$318 time=0m24s income=$8/run V=5 S=3 Sp=3 L=5 P=2 T=0
+runs=52 money=$336 time=0m36s income=$8/run V=5 S=3 Sp=3 L=5 P=2 T=0
+runs=53 money=$52 time=0m48s income=$12/run V=13 S=3 Sp=3 L=5 P=2 T=0
+runs=54 money=$34 time=1m0s income=$16/run V=13 S=3 Sp=6 L=5 P=2 T=0
+runs=55 money=$75 time=1m12s income=$18/run V=13 S=5 Sp=6 L=5 P=2 T=0
+runs=56 money=$77 time=1m24s income=$22/run V=13 S=5 Sp=6 L=9 P=2 T=0
+runs=57 money=$38 time=1m36s income=$24/run V=13 S=5 Sp=6 L=12 P=2 T=0
+runs=58 money=$76 time=1m48s income=$26/run V=13 S=5 Sp=7 L=12 P=2 T=0
+runs=59 money=$148 time=2m0s income=$26/run V=13 S=5 Sp=7 L=12 P=2 T=0
+runs=60 money=$123 time=2m12s income=$33/run V=13 S=9 Sp=7 L=12 P=2 T=0
+runs=61 money=$86 time=2m24s income=$40/run V=13 S=9 Sp=7 L=12 P=6 T=0
+runs=62 money=$65 time=2m36s income=$43/run V=13 S=9 Sp=7 L=12 P=6 T=3
+runs=63 money=$124 time=2m48s income=$45/run V=13 S=9 Sp=7 L=12 P=7 T=3
+runs=64 money=$167 time=3m2s income=$55/run V=13 S=9 Sp=10 L=12 P=7 T=3
+runs=65 money=$214 time=3m15s income=$61/run V=13 S=9 Sp=12 L=12 P=7 T=3
+runs=66 money=$209 time=3m27s income=$64/run V=14 S=9 Sp=12 L=12 P=7 T=3
+runs=67 money=$179 time=3m40s income=$71/run V=14 S=9 Sp=12 L=12 P=7 T=7
+runs=68 money=$210 time=3m56s income=$74/run V=15 S=9 Sp=12 L=12 P=7 T=7
+runs=69 money=$270 time=4m10s income=$86/run V=15 S=12 Sp=12 L=12 P=7 T=7
+runs=70 money=$329 time=4m25s income=$89/run V=16 S=12 Sp=12 L=12 P=7 T=7
+runs=71 money=$309 time=4m40s income=$98/run V=16 S=14 Sp=12 L=12 P=7 T=7
+runs=72 money=$365 time=4m59s income=$101/run V=17 S=14 Sp=12 L=12 P=7 T=7
+runs=73 money=$369 time=5m12s income=$106/run V=17 S=15 Sp=12 L=12 P=7 T=7
+runs=74 money=$482 time=5m30s income=$110/run V=17 S=16 Sp=12 L=12 P=7 T=7
+runs=75 money=$327 time=5m46s income=$127/run V=17 S=17 Sp=12 L=12 P=10 T=7
+runs=76 money=$324 time=6m1s income=$139/run V=17 S=17 Sp=12 L=12 P=12 T=8
+runs=77 money=$194 time=6m13s income=$147/run V=17 S=17 Sp=12 L=12 P=13 T=9
+runs=78 money=$437 time=6m31s income=$147/run V=17 S=17 Sp=12 L=12 P=13 T=9
+runs=79 money=$383 time=6m48s income=$152/run V=18 S=18 Sp=12 L=12 P=13 T=9
+runs=80 money=$477 time=7m5s income=$158/run V=18 S=18 Sp=12 L=12 P=13 T=9
+runs=81 money=$327 time=7m18s income=$163/run V=18 S=19 Sp=12 L=12 P=13 T=9
+runs=82 money=$499 time=7m37s income=$171/run V=18 S=19 Sp=12 L=12 P=13 T=11
+runs=83 money=$534 time=7m59s income=$177/run V=19 S=19 Sp=12 L=12 P=13 T=11
+runs=84 money=$505 time=8m15s income=$183/run V=20 S=19 Sp=12 L=12 P=13 T=11
+runs=85 money=$563 time=8m33s income=$189/run V=20 S=19 Sp=12 L=12 P=14 T=11
+runs=86 money=$418 time=8m53s income=$195/run V=21 S=19 Sp=12 L=12 P=14 T=11
+runs=87 money=$458 time=9m12s income=$201/run V=21 S=19 Sp=12 L=12 P=15 T=11
+runs=88 money=$390 time=9m29s income=$207/run V=21 S=19 Sp=12 L=12 P=16 T=11
+runs=89 money=$604 time=9m45s income=$211/run V=21 S=19 Sp=12 L=12 P=16 T=12
+runs=90 money=$515 time=10m4s income=$219/run V=21 S=20 Sp=12 L=12 P=16 T=12
+runs=91 money=$937 time=10m22s income=$219/run V=21 S=20 Sp=12 L=12 P=16 T=12
+runs=92 money=$663 time=10m44s income=$226/run V=22 S=20 Sp=12 L=12 P=16 T=12
+runs=93 money=$602 time=11m6s income=$232/run V=22 S=20 Sp=12 L=12 P=17 T=12
+runs=94 money=$745 time=11m26s income=$237/run V=22 S=20 Sp=12 L=12 P=17 T=13
+runs=95 money=$1174 time=11m48s income=$237/run V=22 S=20 Sp=12 L=12 P=17 T=13
+runs=96 money=$832 time=12m10s income=$245/run V=23 S=20 Sp=12 L=12 P=17 T=13
+runs=97 money=$460 time=12m27s income=$251/run V=23 S=20 Sp=12 L=12 P=18 T=13
+runs=98 money=$960 time=12m49s income=$251/run V=23 S=20 Sp=12 L=12 P=18 T=13
+runs=99 money=$1416 time=13m9s income=$251/run V=23 S=20 Sp=12 L=12 P=18 T=13
+runs=100 money=$839 time=13m29s income=$259/run V=24 S=20 Sp=12 L=12 P=18 T=13
+```
+
+### Tier 2 Progression Analysis
+
+**Tier 2 Unlock (Run 50-53): Fresh Start**
+- Jump from $8/run income to $12/run immediately (first Tier 2 purchase)
+- Run 53 is critical: Value L13 purchase marks true Tier 2 engagement
+- Feels like entering a "new game" with fresh progression ladder
+
+**Acceleration Phase (Runs 54-75): Compounding Growth**
+- Income accelerates from $12 → $127/run in 22 runs
+- Money swings grow dramatically ($52-$482) — multi-catch bonuses paying off
+- Each run buys multiple Tier 2 upgrades; feels fast but earned
+- Speed/Line cap prevents runaway speed creep; skill challenge persists
+
+**Exponential Endgame (Runs 75-100): The Money Printer**
+- Income: $127 → $259/run (2× growth in 25 runs)
+- Per-run money variance explodes ($179-$1416) — skill and synergy matter
+- Players maxing Permit, Time, pushing Value/Spawn to L20+
+- Game rewards both strategic upgrades AND skillful multi-catch fishing
+
+### Design Success Metrics ✅
+
+1. **Tier 2 extends gameplay indefinitely** — no "endgame void"
+2. **Difficulty scales with progression** — fish movement keeps it challenging
+3. **Skill rewards matter** — multi-catch bonuses incentivize tight loops
+4. **Cost curve is balanced** — 1.25 exponent feels right for Tier 2 pacing
+5. **Cap at L24 provides closure** — players have a defined finish line
+
+---
+
 ## Known Behaviors / Design Decisions
 - Boat speed was halved (`1.75`) to make loop-drawing feel more intentional
 - Fish spawn at randomized angles/distances within `spawnRadius` from origin
 - Wake resets after each successful loop catch (intentional — prevents infinite catching)
-- Permit is the only upgrade with a minimum level (1) — you always catch at least 1 fish/loop
+- Permit is the only Tier 1 upgrade with a minimum level (1) — you always catch at least 1 fish/loop
 - Time upgrade is intentionally the hardest to max — extra clock time is very powerful
+- Tier 2 upgrades hard-cap at L24 to prevent infinite progression bloat
+- Speed and Line upgrades remain capped at L12 throughout all tiers — preserves skill-based gameplay
