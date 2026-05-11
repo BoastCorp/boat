@@ -62,6 +62,7 @@ local State = {
     debugEnabled = false,
     debugSelectedUpgrade = 1,
     totalRunsPlayed = 0,
+    totalFramesPlayed = 0,
 }
 
 -- ---------------------------------------------------------
@@ -141,7 +142,14 @@ local UPGRADE_BASE_PRICES = { 5, 6, 5, 2, 12, 18 }
 
 local function calculateUpgradeCost(upgradeIndex, level)
     local basePrice = UPGRADE_BASE_PRICES[upgradeIndex]
-    return math.floor(basePrice * (1.18 ^ level) + level)
+    -- Tier 1: levels 1-12 use 1.18 exponent
+    -- Tier 2: levels 13+ use 1.25 exponent (steeper cost curve)
+    local exponent = level <= 12 and 1.18 or 1.25
+    return math.floor(basePrice * (exponent ^ level) + level)
+end
+
+local function isTier2Unlocked()
+    return State.money >= 300
 end
 
 local function calculateRunIncome()
@@ -161,12 +169,60 @@ local function spawnFish()
         local angle = (i / fishCount) * 2 * math.pi
         local dist = 40 + math.random() * Config.Fish.spawnRadius
         local randomFishType = math.random(1, #fishImages)
+        local x = math.cos(angle) * dist
+        local y = math.sin(angle) * dist
         State.fish[i] = {
-            x = math.cos(angle) * dist,
-            y = math.sin(angle) * dist,
+            x = x,
+            y = y,
+            baseX = x,  -- base position for movement calculations
+            baseY = y,
             alive = true,
             image = fishImages[randomFishType],
+            movePhase = math.random() * 6.28,  -- random starting phase for movement
+            moveType = math.random(1, 3),  -- 1=circle, 2=figure8, 3=erratic
         }
+    end
+end
+
+-- Update fish positions based on movement phase
+local function updateFishMovement()
+    -- Fish start moving at run 50
+    if State.totalRunsPlayed < 50 then
+        return
+    end
+
+    -- Gentle movement: movement speed starts slow and increases with runs
+    -- At run 50: move at ~0.03 radians/frame (about 20-30 pixels per second)
+    local runsPast50 = math.max(0, State.totalRunsPlayed - 50)
+    local movementSpeed = 0.03 + (runsPast50 * 0.002)  -- starts at 0.03, increases
+    movementSpeed = math.min(movementSpeed, 0.15)  -- cap at 0.15 for late game
+
+    for _, fish in ipairs(State.fish) do
+        if fish.alive then
+            -- Initialize movement fields if they don't exist (for pre-Tier 2 fish)
+            if not fish.movePhase then
+                fish.movePhase = math.random() * 6.28
+                fish.moveType = math.random(1, 3)
+                fish.baseX = fish.x
+                fish.baseY = fish.y
+            end
+
+            fish.movePhase = fish.movePhase + movementSpeed
+
+            if fish.moveType == 1 then
+                -- Slow gentle drift: just small back and forth (±8 pixels max)
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
+                fish.y = fish.baseY + math.cos(fish.movePhase) * 8
+            elseif fish.moveType == 2 then
+                -- Figure-8: small gentle pattern
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 6
+                fish.y = fish.baseY + math.sin(fish.movePhase * 2) * 6
+            else
+                -- Random drift: very small movements
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
+                fish.y = fish.baseY + math.cos(fish.movePhase * 1.5) * 8
+            end
+        end
     end
 end
 
@@ -277,6 +333,21 @@ local function updateInput()
                             State.roundTime = math.max(0, State.roundTime - 50)
                         end
                     end
+                end
+
+                -- Multi-fish catch bonus
+                local bonusMultiplier = 1.0
+                if caught >= 2 then
+                    bonusMultiplier = 1.1  -- +10% for 2 fish
+                end
+                if caught >= 3 then
+                    bonusMultiplier = 1.25  -- +25% for 3 fish
+                end
+                if caught >= 4 then
+                    bonusMultiplier = 1.5  -- +50% for 4+ fish
+                end
+                if caught > 0 and bonusMultiplier > 1.0 then
+                    State.money = State.money + math.floor((caught * (1 + State.upgrades[1].level)) * (bonusMultiplier - 1))
                 end
                 -- Reset wake after catching
                 State.wake = {}
@@ -506,7 +577,8 @@ local function drawUpgradeScreen()
         gfx.drawText(levelStr, 120, y)
 
         -- Cost to next level
-        if upgrade.level < 12 then
+        local maxLevel = (i == 3 or i == 4) and 12 or 24  -- Speed & Line capped at 12, others at 24
+        if upgrade.level < maxLevel then
             local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
             local canAfford = State.money >= nextCost
             local costStr = canAfford and ("$" .. nextCost) or ("$" .. nextCost .. " ?")
@@ -550,6 +622,7 @@ local function drawDebugMenu()
         local upgrade = State.upgrades[i]
         local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
         local currentMult = 1 + (upgrade.level * upgradeMults[i])
+        local maxLevel = (i == 3 or i == 4) and 12 or 24
 
         if i == State.debugSelectedUpgrade then
             gfx.setColor(gfx.kColorBlack)
@@ -560,8 +633,8 @@ local function drawDebugMenu()
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 
-        local levelStr = "L" .. upgrade.level .. "/12"
-        local costStr  = upgrade.level < 12 and ("Next:$" .. nextCost) or "MAXED"
+        local levelStr = "L" .. upgrade.level
+        local costStr  = upgrade.level < maxLevel and ("Next:$" .. nextCost) or "MAXED"
         local multStr  = string.format("x%.2f", currentMult)
         gfx.drawText(string.format("%-6s  %-6s  %-10s  %s", upgrade.name, levelStr, costStr, multStr), 8, y)
 
@@ -577,10 +650,10 @@ local function drawDebugMenu()
     -- Income breakdown
     gfx.drawText("INCOME BREAKDOWN:", 8, y)
     y = y + 12
-    local runIncome = 10
+    local runIncome = 2
     local multNames = {"Value", "Spawn", "Speed", "Line", "Permit", "Time"}
     local mults = { 0.10, 0.10, 0.15, 0.06, 0.05, 0.03 }
-    gfx.drawText("Base: $10", 8, y)
+    gfx.drawText("Base: $2", 8, y)
     y = y + 10
     for i = 1, 6 do
         local prev = runIncome
@@ -610,6 +683,19 @@ end
 -- ---------------------------------------------------------
 function playdate.update()
 
+    -- A + B pressed together = jump to Tier 2
+    if playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB) then
+        -- Jump to Tier 2: set to run 50 with $300 and some Tier 1 upgrades
+        State.totalRunsPlayed = 50
+        State.money = 300
+        State.upgrades[1].level = 5  -- Value L5
+        State.upgrades[2].level = 3  -- Spawn L3
+        State.upgrades[3].level = 3  -- Speed L3
+        State.upgrades[4].level = 5  -- Line L5
+        State.upgrades[5].level = 2  -- Permit L2
+        State.upgrades[6].level = 0  -- Time L0
+    end
+
     -- Menu button: toggle debug panel; Menu+A = debug screen; Menu+B = reset upgrades; Menu+Right = +$500
     if playdate.buttonJustPressed(playdate.kButtonMenu) then
         if playdate.buttonIsPressed(playdate.kButtonA) then
@@ -631,12 +717,29 @@ function playdate.update()
         -- Only update input and physics if not paused
         if not State.isPaused then
             updateInput()
+            updateFishMovement()
+            State.totalFramesPlayed = State.totalFramesPlayed + 1
         end
 
         -- Increment round time
         State.roundTime = State.roundTime + 1
-        if State.roundTime >= State.roundDuration then
+        if State.roundTime >= State.roundDuration and not State.isPaused then
             State.isPaused = true
+            -- Print progression snapshot to console
+            local secs = math.floor(State.totalFramesPlayed / Config.RefreshRate)
+            local mins = math.floor(secs / 60)
+            local income = calculateRunIncome()
+            local u = State.upgrades
+            print("runs=" .. State.totalRunsPlayed ..
+                  " money=$" .. State.money ..
+                  " time=" .. mins .. "m" .. (secs % 60) .. "s" ..
+                  " income=$" .. income .. "/run" ..
+                  " V=" .. u[1].level ..
+                  " S=" .. u[2].level ..
+                  " Sp=" .. u[3].level ..
+                  " L=" .. u[4].level ..
+                  " P=" .. u[5].level ..
+                  " T=" .. u[6].level)
         end
 
         -- Pause menu: B = new round, A = upgrade screen
@@ -672,7 +775,9 @@ function playdate.update()
         if playdate.buttonJustPressed(playdate.kButtonA) then
             -- A = buy next level
             local nextLevel = State.upgrades[sel].level + 1
-            if nextLevel <= 12 then
+            -- Speed (3) and Line (4) capped at 12; Value/Spawn/Permit/Time capped at 24
+            local maxLevel = (sel == 3 or sel == 4) and 12 or 24
+            if nextLevel <= maxLevel then
                 local cost = calculateUpgradeCost(sel, nextLevel)
                 if State.money >= cost then
                     State.money = State.money - cost
