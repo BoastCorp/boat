@@ -31,6 +31,10 @@ local Config = {
         width = 1000,
         height = 1000,
     },
+    Obstacles = {
+        { x = 250, y = 250, w = 80, h = 80 },  -- Top-left area
+        { x = 700, y = 700, w = 80, h = 80 },  -- Bottom-right area
+    },
     WakeMaxLength = 110,
     RefreshRate = 50,
 }
@@ -141,6 +145,22 @@ local function pointInPolygon(px, py, poly)
     return inside
 end
 
+-- Check if a point is inside a box (obstacle collision helper)
+local function isPointInBox(px, py, box)
+    return px >= box.x and px <= box.x + box.w and
+           py >= box.y and py <= box.y + box.h
+end
+
+-- Check if fish is inside any obstacle
+local function isInAnyObstacle(x, y)
+    for _, obstacle in ipairs(Config.Obstacles) do
+        if isPointInBox(x, y, obstacle) then
+            return true
+        end
+    end
+    return false
+end
+
 -- ---------------------------------------------------------
 -- Progression Formulas
 -- ---------------------------------------------------------
@@ -180,6 +200,16 @@ local function spawnFish()
         local randomFishType = math.random(1, #fishImages)
         local x = playAreaCenterX + math.cos(angle) * dist
         local y = playAreaCenterY + math.sin(angle) * dist
+
+        -- Regenerate position if it's inside an obstacle (max 10 attempts)
+        local attempts = 0
+        while isInAnyObstacle(x, y) and attempts < 10 do
+            dist = 40 + math.random() * Config.Fish.spawnRadius
+            x = playAreaCenterX + math.cos(angle) * dist
+            y = playAreaCenterY + math.sin(angle) * dist
+            attempts = attempts + 1
+        end
+
         State.fish[i] = {
             x = x,
             y = y,
@@ -230,6 +260,12 @@ local function updateFishMovement()
                 -- Random drift: very small movements
                 fish.x = fish.baseX + math.sin(fish.movePhase) * 8
                 fish.y = fish.baseY + math.cos(fish.movePhase * 1.5) * 8
+            end
+
+            -- Push fish out if they entered an obstacle
+            if isInAnyObstacle(fish.x, fish.y) then
+                fish.x = fish.baseX
+                fish.y = fish.baseY
             end
         end
     end
@@ -291,6 +327,14 @@ local function updateInput()
        boat.y - boatRadius < 0 or boat.y + boatRadius > playArea.height then
         -- Trigger game over
         State.roundTime = State.roundDuration
+    end
+
+    -- Check for obstacle collision
+    for _, obstacle in ipairs(Config.Obstacles) do
+        if isPointInBox(boat.x, boat.y, obstacle) then
+            -- Trigger game over
+            State.roundTime = State.roundDuration
+        end
     end
 
     -- Record stern position for wake trail
@@ -489,6 +533,21 @@ local function drawContent()
     gfx.drawLine(x2, y2, x3, y3)
     gfx.drawLine(x3, y3, x4, y4)
     gfx.drawLine(x4, y4, x1, y1)
+    gfx.setLineWidth(2)
+
+    -- Draw obstacles
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setLineWidth(3)
+    for _, obstacle in ipairs(Config.Obstacles) do
+        local ox1, oy1 = project(obstacle.x, obstacle.y)
+        local ox2, oy2 = project(obstacle.x + obstacle.w, obstacle.y)
+        local ox3, oy3 = project(obstacle.x + obstacle.w, obstacle.y + obstacle.h)
+        local ox4, oy4 = project(obstacle.x, obstacle.y + obstacle.h)
+        gfx.drawLine(ox1, oy1, ox2, oy2)
+        gfx.drawLine(ox2, oy2, ox3, oy3)
+        gfx.drawLine(ox3, oy3, ox4, oy4)
+        gfx.drawLine(ox4, oy4, ox1, oy1)
+    end
     gfx.setLineWidth(2)
 
     -- Draw wake as simple lines (fast, no polygon building)
