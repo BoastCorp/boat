@@ -15,7 +15,8 @@ local Config = {
         minTurnSpeed = 1.5,
         driftWeight = 0.15,
         rotationSpeed = 5,
-        size = { w = 60, l = 60 }
+        size = { w = 60, l = 60 },
+        radius = 30,
     },
     Fish = {
         count = 5,
@@ -26,6 +27,10 @@ local Config = {
         closeThreshold = 8,
         minLoopLength = 15,
     },
+    PlayArea = {
+        width = 1000,
+        height = 1000,
+    },
     WakeMaxLength = 110,
     RefreshRate = 50,
 }
@@ -35,8 +40,8 @@ local Config = {
 -- ---------------------------------------------------------
 local State = {
     boat = {
-        x = 0,
-        y = 0,
+        x = 500,  -- Center of 1000x1000 play area
+        y = 500,
         angle = 0,
         moveAngle = 0,
         currentSpeed = 0,
@@ -93,14 +98,16 @@ local fishImages = {
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 local roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 
--- Spawn fish at static positions around origin
+-- Spawn fish at static positions around center of play area
+local playAreaCenterX = Config.PlayArea.width / 2
+local playAreaCenterY = Config.PlayArea.height / 2
 for i = 1, Config.Fish.count do
     local angle = (i / Config.Fish.count) * 2 * math.pi
     local dist = 40 + math.random() * Config.Fish.spawnRadius
     local randomFishType = math.random(1, #fishImages)
     State.fish[i] = {
-        x = math.cos(angle) * dist,
-        y = math.sin(angle) * dist,
+        x = playAreaCenterX + math.cos(angle) * dist,
+        y = playAreaCenterY + math.sin(angle) * dist,
         alive = true,
         image = fishImages[randomFishType],
     }
@@ -165,12 +172,14 @@ end
 local function spawnFish()
     local fishCount = math.floor(Config.Fish.count * (1 + State.upgrades[2].level * 0.1))
     State.fish = {}
+    local playAreaCenterX = Config.PlayArea.width / 2
+    local playAreaCenterY = Config.PlayArea.height / 2
     for i = 1, fishCount do
         local angle = (i / fishCount) * 2 * math.pi
         local dist = 40 + math.random() * Config.Fish.spawnRadius
         local randomFishType = math.random(1, #fishImages)
-        local x = math.cos(angle) * dist
-        local y = math.sin(angle) * dist
+        local x = playAreaCenterX + math.cos(angle) * dist
+        local y = playAreaCenterY + math.sin(angle) * dist
         State.fish[i] = {
             x = x,
             y = y,
@@ -231,8 +240,8 @@ local function resetRound()
     State.roundTime = 0
     State.isPaused = false
     State.wake = {}
-    State.boat.x = 0
-    State.boat.y = 0
+    State.boat.x = 500  -- Center of 1000x1000 play area
+    State.boat.y = 500
     State.boat.angle = 0
     State.boat.moveAngle = 0
     State.boat.currentSpeed = 0
@@ -274,6 +283,15 @@ local function updateInput()
     -- Apply velocity to position (top-down)
     boat.x = boat.x + boat.velocity_x
     boat.y = boat.y + boat.velocity_y
+
+    -- Check for boundary collision (play area limit)
+    local boatRadius = Config.Boat.radius
+    local playArea = Config.PlayArea
+    if boat.x - boatRadius < 0 or boat.x + boatRadius > playArea.width or
+       boat.y - boatRadius < 0 or boat.y + boatRadius > playArea.height then
+        -- Trigger game over
+        State.roundTime = State.roundDuration
+    end
 
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
@@ -457,6 +475,20 @@ local function drawContent()
     end
 
     gfx.setColor(gfx.kColorBlack)
+    gfx.setLineWidth(2)
+
+    -- Draw play area boundary
+    local playArea = Config.PlayArea
+    local x1, y1 = project(0, 0)
+    local x2, y2 = project(playArea.width, 0)
+    local x3, y3 = project(playArea.width, playArea.height)
+    local x4, y4 = project(0, playArea.height)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setLineWidth(3)
+    gfx.drawLine(x1, y1, x2, y2)
+    gfx.drawLine(x2, y2, x3, y3)
+    gfx.drawLine(x3, y3, x4, y4)
+    gfx.drawLine(x4, y4, x1, y1)
     gfx.setLineWidth(2)
 
     -- Draw wake as simple lines (fast, no polygon building)
