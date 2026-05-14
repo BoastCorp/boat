@@ -328,16 +328,18 @@ local function updateInput()
     local playArea = Config.PlayArea
 
     -- Calculate four corners of boat bounding box (rotated by boat angle)
-    local angleRad = math.rad(boat.angle - 90)
+    -- angle 0 = up, 90 = right, 180 = down, 270 = left (clockwise)
+    local angleRad = math.rad(boat.angle)
     local cosA = math.cos(angleRad)
     local sinA = math.sin(angleRad)
 
     -- Front-left, front-right, back-left, back-right corners
+    -- Front is in direction of angle, back is opposite
     local corners = {
-        { boat.x + cosA * boatFront - sinA * boatSide, boat.y + sinA * boatFront + cosA * boatSide },  -- front-left
-        { boat.x + cosA * boatFront + sinA * boatSide, boat.y + sinA * boatFront - cosA * boatSide },  -- front-right
-        { boat.x - cosA * boatBack - sinA * boatSide, boat.y - sinA * boatBack + cosA * boatSide },  -- back-left
-        { boat.x - cosA * boatBack + sinA * boatSide, boat.y - sinA * boatBack - cosA * boatSide },  -- back-right
+        { boat.x + cosA * boatFront - sinA * boatSide, boat.y - sinA * boatFront - cosA * boatSide },  -- front-left
+        { boat.x + cosA * boatFront + sinA * boatSide, boat.y - sinA * boatFront + cosA * boatSide },  -- front-right
+        { boat.x - cosA * boatBack - sinA * boatSide, boat.y + sinA * boatBack - cosA * boatSide },  -- back-left
+        { boat.x - cosA * boatBack + sinA * boatSide, boat.y + sinA * boatBack + cosA * boatSide },  -- back-right
     }
 
     -- Check if any corner hits boundary
