@@ -321,9 +321,10 @@ local function updateInput()
     boat.y = boat.y + boat.velocity_y
 
     -- Check for boundary collision (play area limit)
-    -- Use boat sprite dimensions for collision (60x60 sprite)
-    local boatW = Config.Boat.size.w / 2  -- half width = 30px
-    local boatL = Config.Boat.size.l / 2  -- half length = 30px
+    -- Use actual boat graphic bounds, not full sprite (Boat60 is 60x60 but boat graphic is ~38x26)
+    local boatFront = 19  -- pixels from center to nose
+    local boatBack = 19   -- pixels from center to stern
+    local boatSide = 13   -- pixels from center to side edge
     local playArea = Config.PlayArea
 
     -- Calculate four corners of boat bounding box (rotated by boat angle)
@@ -333,10 +334,10 @@ local function updateInput()
 
     -- Front-left, front-right, back-left, back-right corners
     local corners = {
-        { boat.x + cosA * boatL - sinA * boatW, boat.y + sinA * boatL + cosA * boatW },  -- front-left
-        { boat.x + cosA * boatL + sinA * boatW, boat.y + sinA * boatL - cosA * boatW },  -- front-right
-        { boat.x - cosA * boatL - sinA * boatW, boat.y - sinA * boatL + cosA * boatW },  -- back-left
-        { boat.x - cosA * boatL + sinA * boatW, boat.y - sinA * boatL - cosA * boatW },  -- back-right
+        { boat.x + cosA * boatFront - sinA * boatSide, boat.y + sinA * boatFront + cosA * boatSide },  -- front-left
+        { boat.x + cosA * boatFront + sinA * boatSide, boat.y + sinA * boatFront - cosA * boatSide },  -- front-right
+        { boat.x - cosA * boatBack - sinA * boatSide, boat.y - sinA * boatBack + cosA * boatSide },  -- back-left
+        { boat.x - cosA * boatBack + sinA * boatSide, boat.y - sinA * boatBack - cosA * boatSide },  -- back-right
     }
 
     -- Check if any corner hits boundary
