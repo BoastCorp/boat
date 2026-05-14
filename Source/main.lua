@@ -72,6 +72,8 @@ local State = {
     debugSelectedUpgrade = 1,
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
+    testMode = false,
+    testAngle = 0,
 }
 
 -- ---------------------------------------------------------
@@ -90,6 +92,9 @@ local waterFrameTime   = 0
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/Boat60')
 local shadowSprites = gfx.imagetable.new('images/boat/Shadow60')
+
+-- Load boattest sprite for comparison testing
+local boattestSprites = gfx.imagetable.new('images/boat/boattest')
 
 -- Load fish images
 local fishImages = {
@@ -510,6 +515,36 @@ local function drawBoat(x, y, angle)
     end
 end
 
+local function drawBoatTestComparison(angle)
+    -- Clear screen
+    gfx.clear(gfx.kColorWhite)
+
+    -- Get frame index for current angle
+    local frameIndex = getSpriteFrame(angle)
+
+    -- Draw left boat (Boat60)
+    local leftX = 100
+    local leftY = 80
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawText("Boat60", leftX - 20, 20)
+    if boatSprites and boatSprites[frameIndex] then
+        boatSprites[frameIndex]:drawAnchored(leftX, leftY, 0.5, 0.5)
+    end
+
+    -- Draw right boat (boattest)
+    local rightX = 300
+    local rightY = 80
+    gfx.drawText("boattest", rightX - 20, 20)
+    if boattestSprites and boattestSprites[frameIndex] then
+        boattestSprites[frameIndex]:drawAnchored(rightX, rightY, 0.5, 0.5)
+    end
+
+    -- Draw angle info
+    gfx.drawText("Angle: " .. math.floor(angle), 10, 200)
+    gfx.drawText("Frame: " .. frameIndex, 10, 215)
+    gfx.drawText("Menu to exit", 280, 230)
+end
+
 local function drawContent()
     -- Water layers (matches Rowbot Rally order)
     local bx, by = State.boat.x, State.boat.y
@@ -810,7 +845,7 @@ function playdate.update()
         State.upgrades[6].level = 0  -- Time L0
     end
 
-    -- Menu button: toggle debug panel; Menu+A = debug screen; Menu+B = reset upgrades; Menu+Right = +$500
+    -- Menu button: toggle debug panel; Menu+A = debug screen; Menu+B = reset upgrades; Menu+Right = +$500; Menu+Up = boat test
     if playdate.buttonJustPressed(playdate.kButtonMenu) then
         if playdate.buttonIsPressed(playdate.kButtonA) then
             State.currentScreen = "debug"
@@ -822,9 +857,22 @@ function playdate.update()
             State.totalRunsPlayed = 0
         elseif playdate.buttonIsPressed(playdate.kButtonRight) then
             State.money = State.money + 500
+        elseif playdate.buttonIsPressed(playdate.kButtonUp) then
+            State.testMode = not State.testMode
+            State.testAngle = 0
         else
             State.debugEnabled = not State.debugEnabled
         end
+    end
+
+    -- Test mode overrides all other screens
+    if State.testMode then
+        -- Handle crank input for boat rotation
+        State.testAngle = State.testAngle + playdate.getCrankChange()
+
+        -- Draw boat comparison
+        drawBoatTestComparison(State.testAngle)
+        return
     end
 
     if State.currentScreen == "game" then
