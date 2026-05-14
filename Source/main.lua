@@ -321,25 +321,32 @@ local function updateInput()
     boat.y = boat.y + boat.velocity_y
 
     -- Check for boundary collision (play area limit)
-    -- Check boat center and edges (boat radius determines how far edge extends)
-    local boatRadius = Config.Boat.radius
+    -- Use boat sprite dimensions for collision (60x60 sprite)
+    local boatW = Config.Boat.size.w / 2  -- half width = 30px
+    local boatL = Config.Boat.size.l / 2  -- half length = 30px
     local playArea = Config.PlayArea
 
-    -- Check if any part of boat hits boundary
-    if boat.x - boatRadius < 0 or boat.x + boatRadius > playArea.width or
-       boat.y - boatRadius < 0 or boat.y + boatRadius > playArea.height then
-        -- Trigger game over
-        State.roundTime = State.roundDuration
-    end
+    -- Calculate four corners of boat bounding box (rotated by boat angle)
+    local angleRad = math.rad(boat.angle - 90)
+    local cosA = math.cos(angleRad)
+    local sinA = math.sin(angleRad)
 
-    -- Also check front of boat (nose points in direction of boat.angle)
-    local boatLength = Config.Boat.size.l / 2  -- how far front extends
-    local frontX = boat.x + math.cos(math.rad(boat.angle - 90)) * boatLength
-    local frontY = boat.y + math.sin(math.rad(boat.angle - 90)) * boatLength
-    if frontX - boatRadius < 0 or frontX + boatRadius > playArea.width or
-       frontY - boatRadius < 0 or frontY + boatRadius > playArea.height then
-        -- Trigger game over
-        State.roundTime = State.roundDuration
+    -- Front-left, front-right, back-left, back-right corners
+    local corners = {
+        { boat.x + cosA * boatL - sinA * boatW, boat.y + sinA * boatL + cosA * boatW },  -- front-left
+        { boat.x + cosA * boatL + sinA * boatW, boat.y + sinA * boatL - cosA * boatW },  -- front-right
+        { boat.x - cosA * boatL - sinA * boatW, boat.y - sinA * boatL + cosA * boatW },  -- back-left
+        { boat.x - cosA * boatL + sinA * boatW, boat.y - sinA * boatL - cosA * boatW },  -- back-right
+    }
+
+    -- Check if any corner hits boundary
+    for _, corner in ipairs(corners) do
+        if corner[1] < 0 or corner[1] > playArea.width or
+           corner[2] < 0 or corner[2] > playArea.height then
+            -- Trigger game over
+            State.roundTime = State.roundDuration
+            break
+        end
     end
 
     -- Check for obstacle collision
