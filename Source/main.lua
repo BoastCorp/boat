@@ -15,8 +15,8 @@ local Config = {
         minTurnSpeed = 1.5,
         driftWeight = 0.15,
         rotationSpeed = 5,
-        size = { w = 60, l = 60 },
-        radius = 30,
+        size = { w = 80, l = 80 },
+        radius = 40,
     },
     Fish = {
         count = 5,
@@ -31,10 +31,7 @@ local Config = {
         width = 1000,
         height = 1000,
     },
-    Obstacles = {
-        { x = 250, y = 250, w = 80, h = 80 },  -- Top-left area
-        { x = 700, y = 700, w = 80, h = 80 },  -- Bottom-right area
-    },
+    Obstacles = {},
     WakeMaxLength = 110,
     RefreshRate = 50,
 }
@@ -87,9 +84,13 @@ local waterTable       = gfx.imagetable.new('images/water/water')
 local waterFrameCount  = waterTable and waterTable:getLength() or 0
 local waterFrameTime   = 0
 
+-- Load level assets
+local levelTopImage = gfx.image.new('images/level/1-top')
+local levelCollisionImage = gfx.image.new('images/level/1-collision')
+
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
-local boatSprites = gfx.imagetable.new('images/boat/Boat60')
-local shadowSprites = gfx.imagetable.new('images/boat/Shadow60')
+local boatSprites = gfx.imagetable.new('images/boat/boat')
+local shadowSprites = gfx.imagetable.new('images/boat/shadow')
 
 -- Load fish images
 local fishImages = {
@@ -151,12 +152,10 @@ local function isPointInBox(px, py, box)
            py >= box.y and py <= box.y + box.h
 end
 
--- Check if fish is inside any obstacle
+-- Check if fish is inside any obstacle (using collision mask)
 local function isInAnyObstacle(x, y)
-    for _, obstacle in ipairs(Config.Obstacles) do
-        if isPointInBox(x, y, obstacle) then
-            return true
-        end
+    if levelCollisionImage then
+        return levelCollisionImage:sample(x, y) ~= gfx.kColorClear
     end
     return false
 end
@@ -276,8 +275,30 @@ local function resetRound()
     State.roundTime = 0
     State.isPaused = false
     State.wake = {}
-    State.boat.x = 500  -- Center of 1000x1000 play area
-    State.boat.y = 500
+    
+    -- Find a safe spawn point for the boat starting at center (500, 500)
+    local startX, startY = 500, 500
+    if isInAnyObstacle(startX, startY) then
+        -- Spiral outward to find nearest water
+        local found = false
+        local step = 10
+        local radius = step
+        while not found and radius < 400 do
+            for angle = 0, 2 * math.pi, math.pi / 8 do
+                local tx = startX + math.cos(angle) * radius
+                local ty = startY + math.sin(angle) * radius
+                if not isInAnyObstacle(tx, ty) then
+                    startX, startY = tx, ty
+                    found = true
+                    break
+                end
+            end
+            radius = radius + step
+        end
+    end
+    
+    State.boat.x = startX
+    State.boat.y = startY
     State.boat.angle = 0
     State.boat.moveAngle = 0
     State.boat.currentSpeed = 0
@@ -321,10 +342,10 @@ local function updateInput()
     boat.y = boat.y + boat.velocity_y
 
     -- Check for boundary collision (play area limit)
-    -- Use actual boat graphic bounds, not full sprite (Boat60 is 60x60 but boat graphic is ~38x26)
-    local boatFront = 19  -- pixels from center to nose
-    local boatBack = 19   -- pixels from center to stern
-    local boatSide = 13   -- pixels from center to side edge
+    -- Use actual boat graphic bounds, not full sprite (Boat is 80x80 but boat graphic is ~50x34)
+    local boatFront = 25  -- pixels from center to nose
+    local boatBack = 25   -- pixels from center to stern
+    local boatSide = 17   -- pixels from center to side edge
     local playArea = Config.PlayArea
 
     -- Calculate four corners of boat bounding box (rotated by boat angle)
@@ -334,12 +355,11 @@ local function updateInput()
     local sinA = math.sin(angleRad)
 
     -- Corners in local space (Y is forward, X is right):
-    -- Front-left: (-13, 19), Front-right: (13, 19), Back-left: (-13, -19), Back-right: (13, -19)
     local corners = {
-        { boat.x - 13 * cosA + 19 * sinA, boat.y - 13 * sinA - 19 * cosA }, -- front-left
-        { boat.x + 13 * cosA + 19 * sinA, boat.y + 13 * sinA - 19 * cosA }, -- front-right
-        { boat.x - 13 * cosA - 19 * sinA, boat.y - 13 * sinA + 19 * cosA }, -- back-left
-        { boat.x + 13 * cosA - 19 * sinA, boat.y + 13 * sinA + 19 * cosA }, -- back-right
+        { boat.x - boatSide * cosA + boatFront * sinA, boat.y - boatSide * sinA - boatFront * cosA }, -- front-left
+        { boat.x + boatSide * cosA + boatFront * sinA, boat.y + boatSide * sinA - boatFront * cosA }, -- front-right
+        { boat.x - boatSide * cosA - boatBack * sinA,  boat.y - boatSide * sinA + boatBack * cosA  }, -- back-left
+        { boat.x + boatSide * cosA - boatBack * sinA,  boat.y + boatSide * sinA + boatBack * cosA  }, -- back-right
     }
     boat.corners = corners -- Store for debug drawing
 
@@ -353,14 +373,20 @@ local function updateInput()
             break
         end
 
-        -- Obstacle check
-        for _, obstacle in ipairs(Config.Obstacles) do
-            if isPointInBox(corner[1], corner[2], obstacle) then
+        -- Obstacle check (image-based collision)
+        if levelCollisionImage then
+            if levelCollisionImage:sample(corner[1], corner[2]) ~= gfx.kColorClear then
                 collisionDetected = true
                 break
             end
         end
-        if collisionDetected then break end
+    end
+
+    -- Additional center-point check for robustness
+    if not collisionDetected and levelCollisionImage then
+        if levelCollisionImage:sample(boat.x, boat.y) ~= gfx.kColorClear then
+            collisionDetected = true
+        end
     end
 
     if collisionDetected then
@@ -551,6 +577,12 @@ local function drawContent()
     gfx.setColor(gfx.kColorBlack)
     gfx.setLineWidth(2)
 
+    -- Draw level terrain visual
+    if levelTopImage then
+        local lx, ly = project(0, 0)
+        levelTopImage:draw(lx, ly)
+    end
+
     -- Draw play area boundary
     local playArea = Config.PlayArea
     local x1, y1 = project(0, 0)
@@ -563,21 +595,6 @@ local function drawContent()
     gfx.drawLine(x2, y2, x3, y3)
     gfx.drawLine(x3, y3, x4, y4)
     gfx.drawLine(x4, y4, x1, y1)
-    gfx.setLineWidth(2)
-
-    -- Draw obstacles
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setLineWidth(3)
-    for _, obstacle in ipairs(Config.Obstacles) do
-        local ox1, oy1 = project(obstacle.x, obstacle.y)
-        local ox2, oy2 = project(obstacle.x + obstacle.w, obstacle.y)
-        local ox3, oy3 = project(obstacle.x + obstacle.w, obstacle.y + obstacle.h)
-        local ox4, oy4 = project(obstacle.x, obstacle.y + obstacle.h)
-        gfx.drawLine(ox1, oy1, ox2, oy2)
-        gfx.drawLine(ox2, oy2, ox3, oy3)
-        gfx.drawLine(ox3, oy3, ox4, oy4)
-        gfx.drawLine(ox4, oy4, ox1, oy1)
-    end
     gfx.setLineWidth(2)
 
     -- Draw wake as simple lines (fast, no polygon building)

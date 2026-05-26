@@ -414,6 +414,26 @@ Added a visual aid for development:
 - Draws a wireframe box connecting the active collision corners.
 - Allows real-time verification of "glancing" blows and edge-perfect collisions.
 
+
+## Phase 9 — Custom Terrain & Pixel-Perfect Collision (May 26, 2026)
+
+### Image-Based Collision Masking
+Migrated from primitive rectangles to an image-based collision system (inspired by Rowbot Rally):
+- **Collision Mask**: Loads 1-collision.png (1000x1000). Black pixels = Terrain, Transparent = Water.
+- **Pixel Sampling**: The boat's 4 corners and center point are sampled against the mask every frame.
+- **Visuals**: Loads 1-top.png (1000x1000) for the terrain overlay, ensuring 1:1 parity between visuals and collision.
+
+### Safe Spawn Algorithm
+Implemented a robust spawning system to handle arbitrary level geometry:
+- **Spiral Search**: On round start/reset, the game checks the center (500, 500).
+- **Auto-Relocation**: If the center is land, it spirals outward in 10px increments to find the nearest valid water.
+- **Fish Safety**: Updated fish spawning to also use the collision mask, preventing fish from appearing on islands.
+
+### 80x80 Boat Upgrade
+Upgraded the player sprite and physics model:
+- **Assets**: Switched to 80x80 oat.pdt and shadow.pdt (360-degree rotation sheets).
+- **Hitbox Scaling**: Adjusted corner offsets (~50x34) to match the larger visual footprint.
+
 ---
 
 ## Known Behaviors / Design Decisions
