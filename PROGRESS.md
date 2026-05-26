@@ -164,7 +164,8 @@ Config.roundDuration = 600   -- 12 seconds at 50 FPS
 
 ## Files Modified
 
-- **Source/main.lua** â€” sole game file, all logic
+- **Source/main.lua** — Updated collision logic and added debug drawing.
+- **PROGRESS.md** — Added Phase 8 details.
 - **Source/images/fish/** â€” clownfish.png, stur.png, anchovy.png
 - **Source/images/boat/** â€” boat60.gif, shadow60.gif
 
@@ -388,13 +389,30 @@ runs=100 money=$839 time=13m29s income=$259/run V=24 S=20 Sp=12 L=12 P=18 T=13
 - Players maxing Permit, Time, pushing Value/Spawn to L20+
 - Game rewards both strategic upgrades AND skillful multi-catch fishing
 
-### Design Success Metrics âœ…
+### Design Success Metrics ?
 
-1. **Tier 2 extends gameplay indefinitely** â€” no "endgame void"
-2. **Difficulty scales with progression** â€” fish movement keeps it challenging
-3. **Skill rewards matter** â€” multi-catch bonuses incentivize tight loops
-4. **Cost curve is balanced** â€” 1.25 exponent feels right for Tier 2 pacing
-5. **Cap at L24 provides closure** â€” players have a defined finish line
+1. **Tier 2 extends gameplay indefinitely** — no "endgame void"
+2. **Difficulty scales with progression** — fish movement keeps it challenging
+3. **Skill rewards matter** — multi-catch bonuses incentivize tight loops
+4. **Cost curve is balanced** — 1.25 exponent feels right for Tier 2 pacing
+5. **Cap at L24 provides closure** — players have a defined finish line
+
+---
+
+## Phase 8 — Boat Hitbox Collision & Terrain Hazards (May 26, 2026)
+
+### Accurate Edge-Based Collision
+Replaced center-point collision with a 4-corner hitbox:
+- **Dimensions**: Based on boat's visual footprint (38px length, 26px width).
+- **Rotation-Aware**: Hitbox corners (Nose-Left/Right, Stern-Left/Right) are recalculated every frame based on \oat.angle\.
+- **Comprehensive Checks**: Every corner is checked against both play area boundaries and terrain obstacles.
+- **Collision Flow**: Hitting any hazard immediately sets \oundTime = roundDuration\, triggering the Game Over / Upgrade prompt.
+
+### Debug Hitbox Visualization
+Added a visual aid for development:
+- Toggleable via the in-game debug overlay (Menu button).
+- Draws a wireframe box connecting the active collision corners.
+- Allows real-time verification of "glancing" blows and edge-perfect collisions.
 
 ---
 
