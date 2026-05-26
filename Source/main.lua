@@ -72,8 +72,6 @@ local State = {
     debugSelectedUpgrade = 1,
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
-    testMode = false,
-    testAngle = 0,
 }
 
 -- ---------------------------------------------------------
@@ -92,9 +90,6 @@ local waterFrameTime   = 0
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/Boat60')
 local shadowSprites = gfx.imagetable.new('images/boat/Shadow60')
-
--- Load boattest sprite for comparison testing
-local boattestSprites = gfx.imagetable.new('images/boat/boattest')
 
 -- Load fish images
 local fishImages = {
@@ -338,33 +333,40 @@ local function updateInput()
     local cosA = math.cos(angleRad)
     local sinA = math.sin(angleRad)
 
-    -- Front-left, front-right, back-left, back-right corners
-    -- Front is in direction of angle, back is opposite
+    -- Corners in local space (Y is forward, X is right):
+    -- Front-left: (-13, 19), Front-right: (13, 19), Back-left: (-13, -19), Back-right: (13, -19)
     local corners = {
-        { boat.x + cosA * boatFront - sinA * boatSide, boat.y - sinA * boatFront - cosA * boatSide },  -- front-left
-        { boat.x + cosA * boatFront + sinA * boatSide, boat.y - sinA * boatFront + cosA * boatSide },  -- front-right
-        { boat.x - cosA * boatBack - sinA * boatSide, boat.y + sinA * boatBack - cosA * boatSide },  -- back-left
-        { boat.x - cosA * boatBack + sinA * boatSide, boat.y + sinA * boatBack + cosA * boatSide },  -- back-right
+        { boat.x - 13 * cosA + 19 * sinA, boat.y - 13 * sinA - 19 * cosA }, -- front-left
+        { boat.x + 13 * cosA + 19 * sinA, boat.y + 13 * sinA - 19 * cosA }, -- front-right
+        { boat.x - 13 * cosA - 19 * sinA, boat.y - 13 * sinA + 19 * cosA }, -- back-left
+        { boat.x + 13 * cosA - 19 * sinA, boat.y + 13 * sinA + 19 * cosA }, -- back-right
     }
+    boat.corners = corners -- Store for debug drawing
 
-    -- Check if any corner hits boundary
+    -- Check if any corner hits boundary or obstacle
+    local collisionDetected = false
     for _, corner in ipairs(corners) do
+        -- Boundary check
         if corner[1] < 0 or corner[1] > playArea.width or
            corner[2] < 0 or corner[2] > playArea.height then
-            -- Trigger game over
-            State.roundTime = State.roundDuration
+            collisionDetected = true
             break
         end
-    end
 
-    -- Check for obstacle collision
-    for _, obstacle in ipairs(Config.Obstacles) do
-        if isPointInBox(boat.x, boat.y, obstacle) then
-            -- Trigger game over
-            State.roundTime = State.roundDuration
+        -- Obstacle check
+        for _, obstacle in ipairs(Config.Obstacles) do
+            if isPointInBox(corner[1], corner[2], obstacle) then
+                collisionDetected = true
+                break
+            end
         end
+        if collisionDetected then break end
     end
 
+    if collisionDetected then
+        -- Trigger game over
+        State.roundTime = State.roundDuration
+    end
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
     local fwd_y = boat.velocity_y
@@ -515,36 +517,6 @@ local function drawBoat(x, y, angle)
     end
 end
 
-local function drawBoatTestComparison(angle)
-    -- Clear screen
-    gfx.clear(gfx.kColorWhite)
-
-    -- Get frame index for current angle
-    local frameIndex = getSpriteFrame(angle)
-
-    -- Draw left boat (Boat60)
-    local leftX = 100
-    local leftY = 80
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawText("Boat60", leftX - 20, 20)
-    if boatSprites and boatSprites[frameIndex] then
-        boatSprites[frameIndex]:drawAnchored(leftX, leftY, 0.5, 0.5)
-    end
-
-    -- Draw right boat (boattest)
-    local rightX = 300
-    local rightY = 80
-    gfx.drawText("boattest", rightX - 20, 20)
-    if boattestSprites and boattestSprites[frameIndex] then
-        boattestSprites[frameIndex]:drawAnchored(rightX, rightY, 0.5, 0.5)
-    end
-
-    -- Draw angle info
-    gfx.drawText("Angle: " .. math.floor(angle), 10, 200)
-    gfx.drawText("Frame: " .. frameIndex, 10, 215)
-    gfx.drawText("Menu to exit", 280, 230)
-end
-
 local function drawContent()
     -- Water layers (matches Rowbot Rally order)
     local bx, by = State.boat.x, State.boat.y
@@ -633,6 +605,21 @@ local function drawContent()
     -- Draw boat (includes shadow with dithering) at screen center
     local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
     drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
+
+    -- Debug: Draw hitbox
+    if State.debugEnabled and State.boat.corners then
+        gfx.setColor(gfx.kColorBlack)
+        gfx.setLineWidth(1)
+        local c = State.boat.corners
+        local p1x, p1y = project(c[1][1], c[1][2])
+        local p2x, p2y = project(c[2][1], c[2][2])
+        local p3x, p3y = project(c[4][1], c[4][2]) -- Note: 1-2-4-3 order for box loop
+        local p4x, p4y = project(c[3][1], c[3][2])
+        gfx.drawLine(p1x, p1y, p2x, p2y)
+        gfx.drawLine(p2x, p2y, p3x, p3y)
+        gfx.drawLine(p3x, p3y, p4x, p4y)
+        gfx.drawLine(p4x, p4y, p1x, p1y)
+    end
 
     -- Draw indicators pointing to off-screen fish
     drawOffScreenFishIndicators()
@@ -857,22 +844,9 @@ function playdate.update()
             State.totalRunsPlayed = 0
         elseif playdate.buttonIsPressed(playdate.kButtonRight) then
             State.money = State.money + 500
-        elseif playdate.buttonIsPressed(playdate.kButtonUp) then
-            State.testMode = not State.testMode
-            State.testAngle = 0
         else
             State.debugEnabled = not State.debugEnabled
         end
-    end
-
-    -- Test mode overrides all other screens
-    if State.testMode then
-        -- Handle crank input for boat rotation
-        State.testAngle = State.testAngle + playdate.getCrankChange()
-
-        -- Draw boat comparison
-        drawBoatTestComparison(State.testAngle)
-        return
     end
 
     if State.currentScreen == "game" then
