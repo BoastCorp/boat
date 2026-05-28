@@ -17,6 +17,7 @@ local Config = {
         rotationSpeed = 5,
         size = { w = 80, l = 80 },
         radius = 40,
+        capacity = 5,
     },
     Fish = {
         count = 5,
@@ -52,17 +53,14 @@ local State = {
     wake = {},
     fish = {},
     money = 0,
-    roundDuration = 600,  -- 50 FPS * 12 seconds = 600 frames
-    roundTime = 0,
+    hold = 0,
     isPaused = false,
     currentScreen = "game",  -- "game" or "upgrade"
     upgrades = {
-        { name = "Value",  level = 0 },  -- [1] Fish value: +$1 per level, +10% income mult
-        { name = "Spawn",  level = 0 },  -- [2] Extra fish: +10% per level
-        { name = "Speed",  level = 0 },  -- [3] Boat speed: +15% per level
-        { name = "Line",   level = 0 },  -- [4] Wake length: +10% per level, +6% income mult
-        { name = "Permit", level = 1 },  -- [5] Max fish per loop (min 1), +5% income mult
-        { name = "Time",   level = 0 },  -- [6] % chance to add 1s back per catch, +3% income mult
+        { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
+        { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
+        { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
+        { name = "Capacity", level = 0 },  -- [4] Hold capacity: +3 slots per level
     },
     selectedUpgrade = 1,
     debugEnabled = false,
@@ -163,8 +161,8 @@ end
 -- ---------------------------------------------------------
 -- Progression Formulas
 -- ---------------------------------------------------------
-local UPGRADE_BASE_PRICES = { 5, 6, 5, 2, 12, 18 }
--- Value=$5, Spawn=$6, Speed=$5, Line=$2, Permit=$12, Time=$18
+local UPGRADE_BASE_PRICES = { 5, 5, 2, 12 }
+-- Value=$5, Speed=$5, Line=$2, Capacity=$12
 
 local function calculateUpgradeCost(upgradeIndex, level)
     local basePrice = UPGRADE_BASE_PRICES[upgradeIndex]
@@ -179,17 +177,15 @@ local function isTier2Unlocked()
 end
 
 local function calculateRunIncome()
-    local income = 2  -- base $2/run (2 fish × $1 each)
-    local mults = { 0.10, 0.10, 0.15, 0.06, 0.05, 0.03 }
-    for i = 1, 6 do
-        income = income * (1 + State.upgrades[i].level * mults[i])
-    end
-    return math.floor(income)
+    -- Estimated income per full hold
+    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+    local fishValue = 1 + State.upgrades[1].level
+    return maxCapacity * fishValue
 end
 
--- Helper to spawn fish respecting Spawn upgrade
+-- Helper to spawn fish respecting Spawn count (now fixed)
 local function spawnFish()
-    local fishCount = math.floor(Config.Fish.count * (1 + State.upgrades[2].level * 0.1))
+    local fishCount = Config.Fish.count
     State.fish = {}
     local playAreaCenterX = Config.PlayArea.width / 2
     local playAreaCenterY = Config.PlayArea.height / 2
@@ -272,7 +268,7 @@ end
 
 -- Helper to fully reset boat + round
 local function resetRound()
-    State.roundTime = 0
+    State.hold = 0
     State.isPaused = false
     State.wake = {}
     
@@ -326,7 +322,7 @@ local function updateInput()
     -- 90° difference = 0.0 (clamped to 0.4 = 40% minimum speed)
     local cosAngleDiff = math.cos(math.rad(angleDiff))
     local dragFactor = math.max(0.4, cosAngleDiff)
-    local speedMult = 1 + State.upgrades[3].level * 0.15
+    local speedMult = 1 + State.upgrades[2].level * 0.15
     boat.currentSpeed = Config.Boat.baseSpeed * speedMult * dragFactor
 
     -- Gradually align movement angle toward visual angle (drift)
@@ -390,8 +386,8 @@ local function updateInput()
     end
 
     if collisionDetected then
-        -- Trigger game over
-        State.roundTime = State.roundDuration
+        -- Trigger round end (pause)
+        State.isPaused = true
     end
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
@@ -418,7 +414,7 @@ local function updateInput()
     end
 
     table.insert(wake, 1, { wx = sternWx, wy = sternWy, rx = right_wx, ry = right_wy })
-    local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[4].level * 0.1))
+    local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
     if #wake > wakeMax then
         wake[#wake] = nil
     end
@@ -437,21 +433,18 @@ local function updateInput()
                 for j = 1, i do
                     poly[j] = wake[j]
                 end
-                -- Catch fish inside the polygon (capped by Permit level)
-                local permitLimit = State.upgrades[5].level
+                -- Catch fish inside the polygon (capped by Capacity level)
+                local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
                 local caught = 0
                 for _, f in ipairs(State.fish) do
-                    if f.alive and pointInPolygon(f.x, f.y, poly) and caught < permitLimit then
+                    if f.alive and pointInPolygon(f.x, f.y, poly) and (State.hold + caught) < maxCapacity then
                         f.alive = false
                         State.money = State.money + 1 + State.upgrades[1].level
                         caught = caught + 1
-                        -- Time upgrade: 5% chance per level to add 1 second back
-                        local timeChance = State.upgrades[6].level * 0.05
-                        if math.random() < timeChance then
-                            State.roundTime = math.max(0, State.roundTime - 50)
-                        end
                     end
                 end
+
+                State.hold = State.hold + caught
 
                 -- Multi-fish catch bonus
                 local bonusMultiplier = 1.0
@@ -646,12 +639,11 @@ local function drawContent()
     gfx.setColor(gfx.kColorBlack)
     gfx.drawText("$" .. State.money, 4, 4)
 
-    -- Timer (countdown from 12 to 0)
-    local remainingSeconds = math.ceil((State.roundDuration - State.roundTime) / 50)
-    if remainingSeconds < 0 then remainingSeconds = 0 end
+    -- Hold display (current / max)
+    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
     gfx.setFont(roobert24)
     gfx.setColor(gfx.kColorBlack)
-    gfx.drawText(remainingSeconds, 360, 4)
+    gfx.drawText(State.hold .. "/" .. maxCapacity, 340, 4)
     gfx.setFont(nil)
 
     -- Pause message (displayed over the game)
@@ -659,23 +651,20 @@ local function drawContent()
         gfx.setColor(gfx.kColorBlack)
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
         gfx.setFont(roobert24)
-        gfx.drawText("Press B to continue", 40, 80)
-        gfx.drawText("or A to upgrade", 70, 120)
+        gfx.drawText("HOLD FULL!", 100, 80)
+        gfx.drawText("A:Upgrade  B:Return", 80, 120)
         gfx.setFont(nil)
     end
 
     -- Small debug panel (top-right, tiny font, toggle with Menu button)
     if State.debugEnabled then
         local v  = State.upgrades[1].level
-        local s  = State.upgrades[2].level
-        local sp = State.upgrades[3].level
-        local l  = State.upgrades[4].level
-        local p  = State.upgrades[5].level
-        local t  = State.upgrades[6].level
+        local sp = State.upgrades[2].level
+        local l  = State.upgrades[3].level
+        local c  = State.upgrades[4].level
         local income = calculateRunIncome()
         local nextV  = calculateUpgradeCost(1, v + 1)
-        local nextS  = calculateUpgradeCost(2, s + 1)
-        local nextSp = calculateUpgradeCost(3, sp + 1)
+        local nextSp = calculateUpgradeCost(2, sp + 1)
 
         -- White background box
         gfx.setColor(gfx.kColorWhite)
@@ -685,9 +674,9 @@ local function drawContent()
 
         gfx.setFont(nil)
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        gfx.drawText("V:"..v.." S:"..s.." Sp:"..sp.." L:"..l.." P:"..p.." T:"..t, 224, 46)
-        gfx.drawText("Income: $"..income.."/run", 224, 56)
-        gfx.drawText("Next V=$"..nextV.." S=$"..nextS.." Sp=$"..nextSp, 224, 66)
+        gfx.drawText("V:"..v.." Sp:"..sp.." L:"..l.." C:"..c, 224, 46)
+        gfx.drawText("Est. Income: $"..income.."/run", 224, 56)
+        gfx.drawText("Next V=$"..nextV.." Sp=$"..nextSp, 224, 66)
         gfx.drawText("Runs:"..State.totalRunsPlayed.."  $"..State.money, 224, 76)
     end
 end
@@ -702,7 +691,7 @@ local function drawUpgradeScreen()
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
 
     -- Wallet header
-    gfx.drawText("Wallet: $" .. State.money .. "   Income/run: $" .. calculateRunIncome(), 10, 8)
+    gfx.drawText("Wallet: $" .. State.money .. "   Est. Income: $" .. calculateRunIncome(), 10, 8)
 
     -- Divider
     gfx.drawLine(0, 24, 400, 24)
@@ -726,11 +715,11 @@ local function drawUpgradeScreen()
         gfx.drawText(upgrade.name, 20, y)
 
         -- Level in middle
-        local levelStr = upgrade.level .. "/12"
+        local maxLevel = (i == 2 or i == 3) and 12 or 24 -- Speed & Line capped at 12
+        local levelStr = upgrade.level .. "/" .. maxLevel
         gfx.drawText(levelStr, 120, y)
 
         -- Cost to next level
-        local maxLevel = (i == 3 or i == 4) and 12 or 24  -- Speed & Line capped at 12, others at 24
         if upgrade.level < maxLevel then
             local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
             local canAfford = State.money >= nextCost
@@ -769,13 +758,11 @@ local function drawDebugMenu()
     gfx.drawLine(0, 18, 400, 18)
 
     -- Upgrades list
-    local upgradeMults = { 0.10, 0.10, 0.15, 0.06, 0.05, 0.03 }
     local y = 24
-    for i = 1, 6 do
+    for i = 1, #State.upgrades do
         local upgrade = State.upgrades[i]
         local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-        local currentMult = 1 + (upgrade.level * upgradeMults[i])
-        local maxLevel = (i == 3 or i == 4) and 12 or 24
+        local maxLevel = (i == 2 or i == 3) and 12 or 24
 
         if i == State.debugSelectedUpgrade then
             gfx.setColor(gfx.kColorBlack)
@@ -786,10 +773,9 @@ local function drawDebugMenu()
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 
-        local levelStr = "L" .. upgrade.level
+        local levelStr = "L" .. upgrade.level .. "/" .. maxLevel
         local costStr  = upgrade.level < maxLevel and ("Next:$" .. nextCost) or "MAXED"
-        local multStr  = string.format("x%.2f", currentMult)
-        gfx.drawText(string.format("%-6s  %-6s  %-10s  %s", upgrade.name, levelStr, costStr, multStr), 8, y)
+        gfx.drawText(string.format("%-8s  %-8s  %s", upgrade.name, levelStr, costStr), 8, y)
 
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
         y = y + 14
@@ -803,22 +789,15 @@ local function drawDebugMenu()
     -- Income breakdown
     gfx.drawText("INCOME BREAKDOWN:", 8, y)
     y = y + 12
-    local runIncome = 2
-    local multNames = {"Value", "Spawn", "Speed", "Line", "Permit", "Time"}
-    local mults = { 0.10, 0.10, 0.15, 0.06, 0.05, 0.03 }
-    gfx.drawText("Base: $2", 8, y)
+    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+    local fishValue = 1 + State.upgrades[1].level
+    gfx.drawText(string.format("Capacity: %d items", maxCapacity), 8, y)
     y = y + 10
-    for i = 1, 6 do
-        local prev = runIncome
-        runIncome = runIncome * (1 + State.upgrades[i].level * mults[i])
-        if State.upgrades[i].level > 0 then
-            gfx.drawText(string.format("x %s L%d: $%d -> $%d", multNames[i], State.upgrades[i].level, math.floor(prev), math.floor(runIncome)), 8, y)
-            y = y + 10
-        end
-    end
+    gfx.drawText(string.format("Fish Value: $%d each", fishValue), 8, y)
+    y = y + 10
     gfx.drawLine(0, y + 1, 200, y + 1)
     y = y + 4
-    gfx.drawText("TOTAL/RUN: $" .. math.floor(runIncome), 8, y)
+    gfx.drawText("EST. TOTAL/RUN: $" .. (maxCapacity * fishValue), 8, y)
     y = y + 12
 
     -- Stats
@@ -842,11 +821,9 @@ function playdate.update()
         State.totalRunsPlayed = 50
         State.money = 300
         State.upgrades[1].level = 5  -- Value L5
-        State.upgrades[2].level = 3  -- Spawn L3
-        State.upgrades[3].level = 3  -- Speed L3
-        State.upgrades[4].level = 5  -- Line L5
-        State.upgrades[5].level = 2  -- Permit L2
-        State.upgrades[6].level = 0  -- Time L0
+        State.upgrades[2].level = 3  -- Speed L3
+        State.upgrades[3].level = 5  -- Line L5
+        State.upgrades[4].level = 2  -- Capacity L2
     end
 
     -- Menu button: toggle debug panel; Menu+A = debug screen; Menu+B = reset upgrades; Menu+Right = +$500; Menu+Up = boat test
@@ -854,8 +831,8 @@ function playdate.update()
         if playdate.buttonIsPressed(playdate.kButtonA) then
             State.currentScreen = "debug"
         elseif playdate.buttonIsPressed(playdate.kButtonB) then
-            for i = 1, 6 do
-                State.upgrades[i].level = (i == 5) and 1 or 0
+            for i = 1, #State.upgrades do
+                State.upgrades[i].level = 0
             end
             State.money = 0
             State.totalRunsPlayed = 0
@@ -874,9 +851,9 @@ function playdate.update()
             State.totalFramesPlayed = State.totalFramesPlayed + 1
         end
 
-        -- Increment round time
-        State.roundTime = State.roundTime + 1
-        if State.roundTime >= State.roundDuration and not State.isPaused then
+        -- Check if hold is full
+        local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+        if State.hold >= maxCapacity and not State.isPaused then
             State.isPaused = true
             -- Print progression snapshot to console
             local secs = math.floor(State.totalFramesPlayed / Config.RefreshRate)
@@ -885,14 +862,13 @@ function playdate.update()
             local u = State.upgrades
             print("runs=" .. State.totalRunsPlayed ..
                   " money=$" .. State.money ..
+                  " hold=" .. State.hold .. "/" .. maxCapacity ..
                   " time=" .. mins .. "m" .. (secs % 60) .. "s" ..
                   " income=$" .. income .. "/run" ..
                   " V=" .. u[1].level ..
-                  " S=" .. u[2].level ..
-                  " Sp=" .. u[3].level ..
-                  " L=" .. u[4].level ..
-                  " P=" .. u[5].level ..
-                  " T=" .. u[6].level)
+                  " Sp=" .. u[2].level ..
+                  " L=" .. u[3].level ..
+                  " C=" .. u[4].level)
         end
 
         -- Pause menu: B = new round, A = upgrade screen
@@ -928,8 +904,8 @@ function playdate.update()
         if playdate.buttonJustPressed(playdate.kButtonA) then
             -- A = buy next level
             local nextLevel = State.upgrades[sel].level + 1
-            -- Speed (3) and Line (4) capped at 12; Value/Spawn/Permit/Time capped at 24
-            local maxLevel = (sel == 3 or sel == 4) and 12 or 24
+            -- Speed (2) and Line (3) capped at 12; Value/Capacity capped at 24
+            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
             if nextLevel <= maxLevel then
                 local cost = calculateUpgradeCost(sel, nextLevel)
                 if State.money >= cost then
@@ -940,7 +916,7 @@ function playdate.update()
         end
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             -- Left = refund one level
-            local minLevel = (sel == 5) and 1 or 0
+            local minLevel = 0
             if State.upgrades[sel].level > minLevel then
                 local refund = calculateUpgradeCost(sel, State.upgrades[sel].level)
                 State.money = State.money + refund
@@ -960,16 +936,17 @@ function playdate.update()
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.debugSelectedUpgrade = math.max(1, sel - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-            State.debugSelectedUpgrade = math.min(6, sel + 1)
+            State.debugSelectedUpgrade = math.min(#State.upgrades, sel + 1)
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
-            local minLevel = (sel == 5) and 1 or 0
-            State.upgrades[sel].level = math.max(minLevel, State.upgrades[sel].level - 1)
+            State.upgrades[sel].level = math.max(0, State.upgrades[sel].level - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-            State.upgrades[sel].level = math.min(12, State.upgrades[sel].level + 1)
+            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+            State.upgrades[sel].level = math.min(maxLevel, State.upgrades[sel].level + 1)
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
             -- Buy next level at proper cost
             local nextLevel = State.upgrades[sel].level + 1
-            if nextLevel <= 12 then
+            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+            if nextLevel <= maxLevel then
                 local cost = calculateUpgradeCost(sel, nextLevel)
                 if State.money >= cost then
                     State.money = State.money - cost
@@ -980,8 +957,8 @@ function playdate.update()
             if playdate.buttonIsPressed(playdate.kButtonA) then
                 State.money = State.money + 500
             elseif playdate.buttonIsPressed(playdate.kButtonB) then
-                for i = 1, 6 do
-                    State.upgrades[i].level = (i == 5) and 1 or 0
+                for i = 1, #State.upgrades do
+                    State.upgrades[i].level = 0
                 end
                 State.money = 0
                 State.totalRunsPlayed = 0
