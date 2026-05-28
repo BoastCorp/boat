@@ -386,8 +386,13 @@ local function updateInput()
     end
 
     if collisionDetected then
-        -- Trigger round end (pause)
-        State.isPaused = true
+        -- Playful bounce: push back from the obstacle
+        boat.x = boat.x - boat.velocity_x * 2.5
+        boat.y = boat.y - boat.velocity_y * 2.5
+        
+        -- Add a tiny random nudge for "playfulness"
+        boat.x = boat.x + (math.random() - 0.5) * 2
+        boat.y = boat.y + (math.random() - 0.5) * 2
     end
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
