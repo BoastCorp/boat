@@ -14,12 +14,12 @@ The player operates a fishing boat in a top-down perspective, navigating water t
 ## 2. Progression System (The 4 Core Stats)
 Consolidated from the original design to focus on the most impactful mechanics:
 
-| Stat | Flavor Name | Description | Progression |
-| :--- | :--- | :--- | :--- |
-| **Value** | **Market Insight** | Dollars earned per fish caught. | +$1 per level. |
-| **Speed** | **Turbo Motor** | Maximum engine power and acceleration. | +15% per level (Capped at L12). |
-| **Line** | **Nylon Braided Wake** | Persistence/Length of the wake trail. | +10% per level (Capped at L12). |
-| **Capacity** | **Hold Expansion** | Number of slots in the loot hold. | +3 slots per level. |
+| Stat | Description | Progression |
+| :--- | :--- | :--- |
+| **Value** | Dollars earned per fish caught. | +$1 per level. |
+| **Speed** | Maximum engine power and acceleration. | +15% per level (Capped at L12). |
+| **Line** | Persistence/Length of the wake trail. | +10% per level (Capped at L12). |
+| **Capacity** | Number of slots in the loot hold. | +3 slots per level. |
 
 ## 3. Movement & Physics
 *   **Angular Drag:** Visual angle (Crank) controls the boat's nose, while movement angle lags behind, simulating drift and momentum.

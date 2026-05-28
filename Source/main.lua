@@ -59,10 +59,10 @@ local State = {
     isPaused = false,
     currentScreen = "game",  -- "game" or "upgrade"
     upgrades = {
-        { name = "Market Insight",      level = 0 },  -- [1] Fish value: +$1 per level
-        { name = "Turbo Motor",         level = 0 },  -- [2] Boat speed: +15% per level
-        { name = "Nylon Braided Wake",  level = 0 },  -- [3] Wake length: +10% per level
-        { name = "Hold Expansion",      level = 0 },  -- [4] Hold capacity: +3 slots per level
+        { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
+        { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
+        { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
+        { name = "Capacity", level = 0 },  -- [4] Hold capacity: +3 slots per level
     },
     selectedUpgrade = 1,
     debugEnabled = false,
