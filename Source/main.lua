@@ -49,6 +49,8 @@ local State = {
         currentSpeed = 0,
         velocity_x = 0,  -- Momentum in world space
         velocity_y = 0,
+        bounceSpeed = 0,  -- New: persistent bounce momentum
+        bounceFrames = 0, -- New: duration of bounce override
     },
     wake = {},
     fish = {},
@@ -317,16 +319,30 @@ local function updateInput()
     -- Calculate angular delta: how misaligned are nose and movement directions?
     local angleDiff = math.abs((boat.angle - boat.moveAngle + 180) % 360 - 180)
 
-    -- Apply speed penalty based on angular misalignment (cosine curve)
-    -- 0° difference = 1.0 (full speed)
-    -- 90° difference = 0.0 (clamped to 0.4 = 40% minimum speed)
+    -- Calculate engine speed based on angular misalignment
     local cosAngleDiff = math.cos(math.rad(angleDiff))
     local dragFactor = math.max(0.4, cosAngleDiff)
     local speedMult = 1 + State.upgrades[2].level * 0.15
-    boat.currentSpeed = Config.Boat.baseSpeed * speedMult * dragFactor
+    local engineTargetSpeed = Config.Boat.baseSpeed * speedMult * dragFactor
 
-    -- Gradually align movement angle toward visual angle (drift)
-    boat.moveAngle = boat.moveAngle + (boat.angle - boat.moveAngle) * Config.Boat.driftWeight
+    -- Handle Bounce Momentum (Soccer ball physics)
+    if boat.bounceFrames > 0 then
+        -- While bouncing, speed decays from the impact force toward engine speed
+        boat.currentSpeed = boat.bounceSpeed
+        boat.bounceSpeed = boat.bounceSpeed * 0.92 -- Gentle decay
+        boat.bounceFrames = boat.bounceFrames - 1
+        
+        -- Override drift: keep the boat moving in the reflected bounce direction
+        -- (No changes to moveAngle here, let it fly)
+        if boat.bounceFrames == 0 then
+            boat.bounceSpeed = 0
+        end
+    else
+        -- Normal driving physics
+        boat.currentSpeed = engineTargetSpeed
+        -- Gradually align movement angle toward visual angle (drift)
+        boat.moveAngle = boat.moveAngle + (boat.angle - boat.moveAngle) * Config.Boat.driftWeight
+    end
 
     -- Calculate velocity from movement angle at current speed
     local moveAngle_rad = math.rad(boat.moveAngle - 90)
@@ -386,13 +402,41 @@ local function updateInput()
     end
 
     if collisionDetected then
-        -- Playful bounce: push back from the obstacle
-        boat.x = boat.x - boat.velocity_x * 2.5
-        boat.y = boat.y - boat.velocity_y * 2.5
+        -- 1. Find collision normal
+        local nx, ny = 0, 0
+        local sampleDist = 20
+        for a = 0, 7 do
+            local ang = a * (math.pi / 4)
+            local sx = boat.x + math.cos(ang) * sampleDist
+            local sy = boat.y + math.sin(ang) * sampleDist
+            local hitting = false
+            if sx < 0 or sx > playArea.width or sy < 0 or sy > playArea.height then hitting = true
+            elseif levelCollisionImage and levelCollisionImage:sample(sx, sy) ~= gfx.kColorClear then hitting = true end
+            if hitting then nx = nx - math.cos(ang) ny = ny - math.sin(ang) end
+        end
+        local nLen = math.sqrt(nx * nx + ny * ny)
+        if nLen > 0 then nx, ny = nx / nLen, ny / nLen else nx, ny = -boat.velocity_x, -boat.velocity_y end
+
+        -- 2. Physical Bounce Impulse
+        -- Nudge 4px to clear wall immediately
+        boat.x = boat.x + nx * 4
+        boat.y = boat.y + ny * 4
+
+        -- Reflect current movement vector
+        local dot = boat.velocity_x * nx + boat.velocity_y * ny
+        local rx = boat.velocity_x - 2 * dot * nx
+        local ry = boat.velocity_y - 2 * dot * ny
         
-        -- Add a tiny random nudge for "playfulness"
-        boat.x = boat.x + (math.random() - 0.5) * 2
-        boat.y = boat.y + (math.random() - 0.5) * 2
+        -- Set the bounce state
+        boat.moveAngle = math.deg(math.atan2(ry, rx)) + 90
+        boat.bounceSpeed = 4.5  -- Gentler initial speed
+        boat.bounceFrames = 20  -- Longer duration for visible travel (~0.4s)
+        
+        -- Visually "recoil" the boat
+        boat.angle = boat.moveAngle - 90
+        
+        -- Clear wake so it doesn't look weird during the fast movement
+        State.wake = {}
     end
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
