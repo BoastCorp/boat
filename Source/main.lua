@@ -42,8 +42,8 @@ local Config = {
 -- ---------------------------------------------------------
 local State = {
     boat = {
-        x = 700,  -- Start in center of 1400x1400
-        y = 700,
+        x = 852,  -- Start at 852, 1065
+        y = 1065,
         angle = 0,
         moveAngle = 0,
         currentSpeed = 0,
@@ -87,6 +87,7 @@ local waterFrameTime   = 0
 -- Load level assets
 local levelTopImage = gfx.image.new('images/level/2-top')
 local levelCollisionImage = gfx.image.new('images/level/2-collision')
+local dockImage = gfx.image.new('images/level/dock')
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
@@ -295,8 +296,8 @@ local function resetRound()
     State.isPaused = false
     State.wake = {}
     
-    -- Find a safe spawn point for the boat starting at center
-    local startX, startY = 700, 700
+    -- Find a safe spawn point for the boat starting at 852, 1065
+    local startX, startY = 852, 1065
     if isInAnyObstacle(startX, startY) then
         -- Spiral outward to find nearest water
         local found = false
@@ -762,12 +763,17 @@ local function drawContent()
 
     -- Pause message (displayed over the game)
     if State.isPaused then
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillRect(60, 70, 280, 100)
         gfx.setColor(gfx.kColorBlack)
+        gfx.drawRect(60, 70, 280, 100)
+
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
         gfx.setFont(roobert24)
-        gfx.drawText("HOLD FULL!", 100, 80)
-        gfx.drawText("A:Upgrade  B:Return", 80, 120)
+        gfx.drawText("HOLD FULL!", 135, 80)
         gfx.setFont(nil)
+        gfx.drawText("Go back to dock?", 150, 115)
+        gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
     end
 
     -- Small debug panel (top-right, tiny font, toggle with Menu button)
@@ -792,6 +798,18 @@ local function drawContent()
         gfx.drawText("Est. Income: $"..income.."/run", 224, 56)
         gfx.drawText("Next V=$"..nextV.." Sp=$"..nextSp, 224, 66)
         gfx.drawText("Runs:"..State.totalRunsPlayed.."  $"..State.money, 224, 76)
+    end
+end
+
+-- ---------------------------------------------------------
+-- Dock Screen
+-- ---------------------------------------------------------
+local function drawDockScreen()
+    if dockImage then
+        dockImage:draw(0, 0)
+    else
+        gfx.clear(gfx.kColorWhite)
+        gfx.drawText("DOCK (Image missing)", 100, 100)
     end
 end
 
@@ -985,18 +1003,29 @@ function playdate.update()
                   " C=" .. u[4].level)
         end
 
-        -- Pause menu: B = new round, A = upgrade screen
+        -- Pause menu: A = Dock, B = Stay (new round)
         if State.isPaused then
-            if playdate.buttonJustPressed(playdate.kButtonB) then
+            if playdate.buttonJustPressed(playdate.kButtonA) then
+                State.isPaused = false
+                State.currentScreen = "dock"
+            elseif playdate.buttonJustPressed(playdate.kButtonB) then
                 resetRound()
-            elseif playdate.buttonJustPressed(playdate.kButtonA) then
-                State.currentScreen = "upgrade"
             end
         end
 
         waterFrameTime = waterFrameTime + 1
         gfx.clear()
         drawContent()
+
+    elseif State.currentScreen == "dock" then
+        if playdate.buttonJustPressed(playdate.kButtonUp) then
+            resetRound()
+            State.currentScreen = "game"
+        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
+            State.currentScreen = "upgrade"
+        end
+
+        drawDockScreen()
 
     elseif State.currentScreen == "upgrade" then
         -- Crank scrolls up/down through the list
@@ -1038,8 +1067,7 @@ function playdate.update()
             end
         end
         if playdate.buttonJustPressed(playdate.kButtonB) then
-            State.currentScreen = "game"
-            resetRound()
+            State.currentScreen = "dock"
         end
 
         drawUpgradeScreen()
