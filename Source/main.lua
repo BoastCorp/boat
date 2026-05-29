@@ -53,6 +53,7 @@ local State = {
         bounceFrames = 0, -- New: duration of bounce override
     },
     wake = {},
+    wakePool = {}, -- Pre-allocated/recycled tables for wake points
     fish = {},
     money = 0,
     hold = 0,
@@ -294,6 +295,11 @@ end
 local function resetRound()
     State.hold = 0
     State.isPaused = false
+    
+    -- Recycle existing wake points into pool
+    for _, p in ipairs(State.wake) do
+        table.insert(State.wakePool, p)
+    end
     State.wake = {}
     
     -- Find a safe spawn point for the boat starting at 852, 1065
@@ -422,51 +428,53 @@ local function updateInput()
     boat.x = boat.x + boat.velocity_x
     boat.y = boat.y + boat.velocity_y
 
-    -- Check for boundary collision (play area limit)
     -- Use actual boat graphic bounds, not full sprite (Boat is 80x80 but boat graphic is ~50x34)
     local boatFront = 25  -- pixels from center to nose
     local boatBack = 25   -- pixels from center to stern
     local boatSide = 17   -- pixels from center to side edge
     local playArea = Config.PlayArea
 
-    -- Calculate four corners of boat bounding box (rotated by boat angle)
-    -- angle 0 = up, 90 = right, 180 = down, 270 = left (clockwise)
-    local angleRad = math.rad(boat.angle)
-    local cosA = math.cos(angleRad)
-    local sinA = math.sin(angleRad)
-
-    -- Corners in local space (Y is forward, X is right):
-    local corners = {
-        { boat.x - boatSide * cosA + boatFront * sinA, boat.y - boatSide * sinA - boatFront * cosA }, -- front-left
-        { boat.x + boatSide * cosA + boatFront * sinA, boat.y + boatSide * sinA - boatFront * cosA }, -- front-right
-        { boat.x - boatSide * cosA - boatBack * sinA,  boat.y - boatSide * sinA + boatBack * cosA  }, -- back-left
-        { boat.x + boatSide * cosA - boatBack * sinA,  boat.y + boatSide * sinA + boatBack * cosA  }, -- back-right
-    }
-    boat.corners = corners -- Store for debug drawing
-
-    -- Check if any corner hits boundary or obstacle
+    -- Check for boundary collision (play area limit)
+    -- Skip checks if we just bounced (cooldown to prevent jitter)
     local collisionDetected = false
-    for _, corner in ipairs(corners) do
-        -- Boundary check
-        if corner[1] < 0 or corner[1] > playArea.width or
-           corner[2] < 0 or corner[2] > playArea.height then
-            collisionDetected = true
-            break
-        end
+    if boat.bounceFrames < 15 then
+        -- Calculate four corners of boat bounding box (rotated by boat angle)
+        -- angle 0 = up, 90 = right, 180 = down, 270 = left (clockwise)
+        local angleRad = math.rad(boat.angle)
+        local cosA = math.cos(angleRad)
+        local sinA = math.sin(angleRad)
 
-        -- Obstacle check (image-based collision)
-        if levelCollisionImage then
-            if levelCollisionImage:sample(corner[1], corner[2]) ~= gfx.kColorClear then
+        -- Corners in local space (Y is forward, X is right):
+        local corners = {
+            { boat.x - boatSide * cosA + boatFront * sinA, boat.y - boatSide * sinA - boatFront * cosA }, -- front-left
+            { boat.x + boatSide * cosA + boatFront * sinA, boat.y + boatSide * sinA - boatFront * cosA }, -- front-right
+            { boat.x - boatSide * cosA - boatBack * sinA,  boat.y - boatSide * sinA + boatBack * cosA  }, -- back-left
+            { boat.x + boatSide * cosA - boatBack * sinA,  boat.y + boatSide * sinA + boatBack * cosA  }, -- back-right
+        }
+        boat.corners = corners -- Store for debug drawing
+
+        for _, corner in ipairs(corners) do
+            -- Boundary check
+            if corner[1] < 0 or corner[1] > playArea.width or
+               corner[2] < 0 or corner[2] > playArea.height then
                 collisionDetected = true
                 break
             end
-        end
-    end
 
-    -- Additional center-point check for robustness
-    if not collisionDetected and levelCollisionImage then
-        if levelCollisionImage:sample(boat.x, boat.y) ~= gfx.kColorClear then
-            collisionDetected = true
+            -- Obstacle check (image-based collision)
+            if levelCollisionImage then
+                if levelCollisionImage:sample(corner[1], corner[2]) ~= gfx.kColorClear then
+                    collisionDetected = true
+                    break
+                end
+            end
+        end
+
+        -- Additional center-point check for robustness
+        if not collisionDetected and levelCollisionImage then
+            if levelCollisionImage:sample(boat.x, boat.y) ~= gfx.kColorClear then
+                collisionDetected = true
+            end
         end
     end
 
@@ -487,9 +495,9 @@ local function updateInput()
         if nLen > 0 then nx, ny = nx / nLen, ny / nLen else nx, ny = -boat.velocity_x, -boat.velocity_y end
 
         -- 2. Physical Bounce Impulse
-        -- Nudge 4px to clear wall immediately
-        boat.x = boat.x + nx * 4
-        boat.y = boat.y + ny * 4
+        -- Nudge 10px (increased from 4) to clear wall immediately
+        boat.x = boat.x + nx * 10
+        boat.y = boat.y + ny * 10
 
         -- Reflect current movement vector
         local dot = boat.velocity_x * nx + boat.velocity_y * ny
@@ -528,10 +536,15 @@ local function updateInput()
         sternWy = sternWy * 0.6 + prev.wy * 0.4
     end
 
-    table.insert(wake, 1, { wx = sternWx, wy = sternWy, rx = right_wx, ry = right_wy })
+    -- Pull from pool or create new table
+    local p = table.remove(State.wakePool) or {}
+    p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
+
+    table.insert(wake, 1, p)
     local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
     if #wake > wakeMax then
-        wake[#wake] = nil
+        local removed = table.remove(wake)
+        table.insert(State.wakePool, removed)
     end
 
     -- Loop detection: if stern gets close to an older wake point, catch fish inside
@@ -575,7 +588,11 @@ local function updateInput()
                 if caught > 0 and bonusMultiplier > 1.0 then
                     State.money = State.money + math.floor((caught * (1 + State.upgrades[1].level)) * (bonusMultiplier - 1))
                 end
-                -- Reset wake after catching
+                
+                -- Recycle wake into pool after catching
+                for _, wp in ipairs(wake) do
+                    table.insert(State.wakePool, wp)
+                end
                 State.wake = {}
                 break
             end
