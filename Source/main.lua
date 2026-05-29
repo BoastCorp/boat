@@ -29,8 +29,8 @@ local Config = {
         minLoopLength = 15,
     },
     PlayArea = {
-        width = 4000,
-        height = 4000,
+        width = 1400,
+        height = 1400,
     },
     Obstacles = {},
     WakeMaxLength = 110,
@@ -42,8 +42,8 @@ local Config = {
 -- ---------------------------------------------------------
 local State = {
     boat = {
-        x = 872,  -- New spawn coordinates
-        y = 1032,
+        x = 700,  -- Start in center of 1400x1400
+        y = 700,
         angle = 0,
         moveAngle = 0,
         currentSpeed = 0,
@@ -103,21 +103,6 @@ local fishImages = {
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 local roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 
--- Spawn fish at static positions around center of play area
-local playAreaCenterX = 872
-local playAreaCenterY = 1032
-for i = 1, Config.Fish.count do
-    local angle = (i / Config.Fish.count) * 2 * math.pi
-    local dist = 40 + math.random() * Config.Fish.spawnRadius
-    local randomFishType = math.random(1, #fishImages)
-    State.fish[i] = {
-        x = playAreaCenterX + math.cos(angle) * dist,
-        y = playAreaCenterY + math.sin(angle) * dist,
-        alive = true,
-        image = fishImages[randomFishType],
-    }
-end
-
 -- ---------------------------------------------------------
 -- Utilities
 -- ---------------------------------------------------------
@@ -155,10 +140,129 @@ end
 -- Check if fish is inside any obstacle (using collision mask)
 local function isInAnyObstacle(x, y)
     if levelCollisionImage then
-        return levelCollisionImage:sample(x, y) ~= gfx.kColorClear
+        -- In Playdate, sample returns a color. 
+        -- If it's a 1-bit collision map, land is usually black (kColorBlack).
+        local color = levelCollisionImage:sample(x, y)
+        return color == gfx.kColorBlack
     end
     return false
 end
+
+-- Check if a coordinate is "Safe Water" (distance away from land)
+local function isSafeWater(x, y, radius)
+    -- Check center
+    if isInAnyObstacle(x, y) then return false end
+    
+    -- If no radius check needed, we're done
+    if not radius or radius <= 0 then return true end
+    
+    -- Check 8 points around the circle to ensure clearance
+    for a = 0, 7 do
+        local angle = a * (math.pi / 4)
+        local sx = x + math.cos(angle) * radius
+        local sy = y + math.sin(angle) * radius
+        if isInAnyObstacle(sx, sy) then return false end
+    end
+    
+    return true
+end
+
+-- Helper to spawn fish in Schools and Lone Scouts
+local function spawnFish()
+    local totalFish = 15 -- Set to 15 (base 10 + extra requested)
+    State.fish = {}
+    
+    -- Playable area is 1000x1000 (visual 1400x1400)
+    -- Center 1000x1000 means coords from 200 to 1200
+    local minX, maxX = 200, 1200
+    local minY, maxY = 200, 1200
+    
+    local fishPlaced = 0
+    print("Spawning fish schools...")
+    
+    -- 1. Spawn Schools (Clusters)
+    local numSchools = 3
+    local fishPerSchool = 3
+    
+    for s = 1, numSchools do
+        -- Find a safe Anchor Point (50px buffer from land)
+        local anchorX, anchorY
+        local attempts = 0
+        repeat
+            anchorX = math.random(minX, maxX)
+            anchorY = math.random(minY, maxY)
+            attempts = attempts + 1
+        until isSafeWater(anchorX, anchorY, 50) or attempts > 100
+        
+        if attempts <= 100 then
+            -- Spawn cluster around anchor
+            for i = 1, fishPerSchool do
+                local angle = math.random() * 2 * math.pi
+                local dist = math.random(15, 60)
+                local fx = anchorX + math.cos(angle) * dist
+                local fy = anchorY + math.sin(angle) * dist
+                
+                -- Ensure individual fish is at least in water
+                if not isInAnyObstacle(fx, fy) then
+                    local randomFishType = math.random(1, #fishImages)
+                    fishPlaced = fishPlaced + 1
+                    State.fish[fishPlaced] = {
+                        x = fx, y = fy, baseX = fx, baseY = fy,
+                        alive = true, image = fishImages[randomFishType],
+                        movePhase = math.random() * 6.28,
+                        moveType = math.random(1, 3)
+                    }
+                end
+            end
+        end
+    end
+    
+    print("Spawning lone scouts... Fish so far: " .. fishPlaced)
+    
+    -- 2. Spawn Lone Scouts (Fill remaining slots)
+    local attempts = 0
+    while fishPlaced < totalFish and attempts < 200 do
+        local fx = math.random(minX, maxX)
+        local fy = math.random(minY, maxY)
+        
+        if isSafeWater(fx, fy, 40) then -- slightly smaller buffer for lone scouts
+            local randomFishType = math.random(1, #fishImages)
+            fishPlaced = fishPlaced + 1
+            State.fish[fishPlaced] = {
+                x = fx, y = fy, baseX = fx, baseY = fy,
+                alive = true, image = fishImages[randomFishType],
+                movePhase = math.random() * 6.28,
+                moveType = math.random(1, 3)
+            }
+        end
+        attempts = attempts + 1
+    end
+    print("Total fish spawned: " .. fishPlaced)
+    
+    -- Fallback: If we couldn't place any fish, try again with smaller radius
+    if fishPlaced == 0 then
+        print("Warning: No fish spawned with 50px buffer. Retrying with 15px...")
+        local attempts = 0
+        while fishPlaced < totalFish and attempts < 200 do
+            local fx = math.random(minX, maxX)
+            local fy = math.random(minY, maxY)
+            if isSafeWater(fx, fy, 15) then
+                local randomFishType = math.random(1, #fishImages)
+                fishPlaced = fishPlaced + 1
+                State.fish[fishPlaced] = {
+                    x = fx, y = fy, baseX = fx, baseY = fy,
+                    alive = true, image = fishImages[randomFishType],
+                    movePhase = math.random() * 6.28,
+                    moveType = math.random(1, 3)
+                }
+            end
+            attempts = attempts + 1
+        end
+    end
+end
+
+-- Call initial spawn
+spawnFish()
 
 -- ---------------------------------------------------------
 -- Progression Formulas
@@ -185,89 +289,6 @@ local function calculateRunIncome()
     return maxCapacity * fishValue
 end
 
--- Helper to spawn fish respecting Spawn count (now fixed)
-local function spawnFish()
-    local fishCount = Config.Fish.count
-    State.fish = {}
-    local playAreaCenterX = 872
-    local playAreaCenterY = 1032
-    for i = 1, fishCount do
-        local angle = (i / fishCount) * 2 * math.pi
-        local dist = 40 + math.random() * Config.Fish.spawnRadius
-        local randomFishType = math.random(1, #fishImages)
-        local x = playAreaCenterX + math.cos(angle) * dist
-        local y = playAreaCenterY + math.sin(angle) * dist
-
-        -- Regenerate position if it's inside an obstacle (max 10 attempts)
-        local attempts = 0
-        while isInAnyObstacle(x, y) and attempts < 10 do
-            dist = 40 + math.random() * Config.Fish.spawnRadius
-            x = playAreaCenterX + math.cos(angle) * dist
-            y = playAreaCenterY + math.sin(angle) * dist
-            attempts = attempts + 1
-        end
-
-        State.fish[i] = {
-            x = x,
-            y = y,
-            baseX = x,  -- base position for movement calculations
-            baseY = y,
-            alive = true,
-            image = fishImages[randomFishType],
-            movePhase = math.random() * 6.28,  -- random starting phase for movement
-            moveType = math.random(1, 3),  -- 1=circle, 2=figure8, 3=erratic
-        }
-    end
-end
-
--- Update fish positions based on movement phase
-local function updateFishMovement()
-    -- Fish start moving at run 50
-    if State.totalRunsPlayed < 50 then
-        return
-    end
-
-    -- Gentle movement: movement speed starts slow and increases with runs
-    -- At run 50: move at ~0.03 radians/frame (about 20-30 pixels per second)
-    local runsPast50 = math.max(0, State.totalRunsPlayed - 50)
-    local movementSpeed = 0.03 + (runsPast50 * 0.002)  -- starts at 0.03, increases
-    movementSpeed = math.min(movementSpeed, 0.15)  -- cap at 0.15 for late game
-
-    for _, fish in ipairs(State.fish) do
-        if fish.alive then
-            -- Initialize movement fields if they don't exist (for pre-Tier 2 fish)
-            if not fish.movePhase then
-                fish.movePhase = math.random() * 6.28
-                fish.moveType = math.random(1, 3)
-                fish.baseX = fish.x
-                fish.baseY = fish.y
-            end
-
-            fish.movePhase = fish.movePhase + movementSpeed
-
-            if fish.moveType == 1 then
-                -- Slow gentle drift: just small back and forth (±8 pixels max)
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
-                fish.y = fish.baseY + math.cos(fish.movePhase) * 8
-            elseif fish.moveType == 2 then
-                -- Figure-8: small gentle pattern
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 6
-                fish.y = fish.baseY + math.sin(fish.movePhase * 2) * 6
-            else
-                -- Random drift: very small movements
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
-                fish.y = fish.baseY + math.cos(fish.movePhase * 1.5) * 8
-            end
-
-            -- Push fish out if they entered an obstacle
-            if isInAnyObstacle(fish.x, fish.y) then
-                fish.x = fish.baseX
-                fish.y = fish.baseY
-            end
-        end
-    end
-end
-
 -- Helper to fully reset boat + round
 local function resetRound()
     State.hold = 0
@@ -275,7 +296,7 @@ local function resetRound()
     State.wake = {}
     
     -- Find a safe spawn point for the boat starting at center
-    local startX, startY = 872, 1032
+    local startX, startY = 700, 700
     if isInAnyObstacle(startX, startY) then
         -- Spiral outward to find nearest water
         local found = false
@@ -304,6 +325,53 @@ local function resetRound()
     State.boat.velocity_y = 0
     State.totalRunsPlayed = State.totalRunsPlayed + 1
     spawnFish()
+end
+
+-- Update fish positions based on movement phase
+local function updateFishMovement()
+    -- Fish start moving at run 50
+    if State.totalRunsPlayed < 50 then
+        return
+    end
+
+    -- Gentle movement: movement speed starts slow and increases with runs
+    local runsPast50 = math.max(0, State.totalRunsPlayed - 50)
+    local movementSpeed = 0.03 + (runsPast50 * 0.002)
+    movementSpeed = math.min(movementSpeed, 0.15)
+
+    for _, fish in ipairs(State.fish) do
+        if fish.alive then
+            -- Initialize movement fields if they don't exist
+            if not fish.movePhase then
+                fish.movePhase = math.random() * 6.28
+                fish.moveType = math.random(1, 3)
+                fish.baseX = fish.x
+                fish.baseY = fish.y
+            end
+
+            fish.movePhase = fish.movePhase + movementSpeed
+
+            if fish.moveType == 1 then
+                -- Slow gentle drift
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
+                fish.y = fish.baseY + math.cos(fish.movePhase) * 8
+            elseif fish.moveType == 2 then
+                -- Figure-8
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 6
+                fish.y = fish.baseY + math.sin(fish.movePhase * 2) * 6
+            else
+                -- Random drift
+                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
+                fish.y = fish.baseY + math.cos(fish.movePhase * 1.5) * 8
+            end
+
+            -- Push fish out if they entered an obstacle
+            if isInAnyObstacle(fish.x, fish.y) then
+                fish.x = fish.baseX
+                fish.y = fish.baseY
+            end
+        end
+    end
 end
 
 -- ---------------------------------------------------------
