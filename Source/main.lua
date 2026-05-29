@@ -29,8 +29,8 @@ local Config = {
         minLoopLength = 15,
     },
     PlayArea = {
-        width = 1000,
-        height = 1000,
+        width = 4000,
+        height = 4000,
     },
     Obstacles = {},
     WakeMaxLength = 110,
@@ -42,8 +42,8 @@ local Config = {
 -- ---------------------------------------------------------
 local State = {
     boat = {
-        x = 500,  -- Center of 1000x1000 play area
-        y = 500,
+        x = 872,  -- New spawn coordinates
+        y = 1032,
         angle = 0,
         moveAngle = 0,
         currentSpeed = 0,
@@ -85,8 +85,8 @@ local waterFrameCount  = waterTable and waterTable:getLength() or 0
 local waterFrameTime   = 0
 
 -- Load level assets
-local levelTopImage = gfx.image.new('images/level/1-top')
-local levelCollisionImage = gfx.image.new('images/level/1-collision')
+local levelTopImage = gfx.image.new('images/level/2-top')
+local levelCollisionImage = gfx.image.new('images/level/2-collision')
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
@@ -104,8 +104,8 @@ local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 local roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 
 -- Spawn fish at static positions around center of play area
-local playAreaCenterX = Config.PlayArea.width / 2
-local playAreaCenterY = Config.PlayArea.height / 2
+local playAreaCenterX = 872
+local playAreaCenterY = 1032
 for i = 1, Config.Fish.count do
     local angle = (i / Config.Fish.count) * 2 * math.pi
     local dist = 40 + math.random() * Config.Fish.spawnRadius
@@ -189,8 +189,8 @@ end
 local function spawnFish()
     local fishCount = Config.Fish.count
     State.fish = {}
-    local playAreaCenterX = Config.PlayArea.width / 2
-    local playAreaCenterY = Config.PlayArea.height / 2
+    local playAreaCenterX = 872
+    local playAreaCenterY = 1032
     for i = 1, fishCount do
         local angle = (i / fishCount) * 2 * math.pi
         local dist = 40 + math.random() * Config.Fish.spawnRadius
@@ -274,8 +274,8 @@ local function resetRound()
     State.isPaused = false
     State.wake = {}
     
-    -- Find a safe spawn point for the boat starting at center (500, 500)
-    local startX, startY = 500, 500
+    -- Find a safe spawn point for the boat starting at center
+    local startX, startY = 872, 1032
     if isInAnyObstacle(startX, startY) then
         -- Spiral outward to find nearest water
         local found = false
@@ -1016,3 +1016,4 @@ function playdate.update()
         drawDebugMenu()
     end
 end
+
