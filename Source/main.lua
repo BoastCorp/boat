@@ -432,9 +432,6 @@ local function updateInput()
         boat.bounceSpeed = 4.5  -- Gentler initial speed
         boat.bounceFrames = 20  -- Longer duration for visible travel (~0.4s)
         
-        -- Visually "recoil" the boat
-        boat.angle = boat.moveAngle - 90
-        
         -- Clear wake so it doesn't look weird during the fast movement
         State.wake = {}
     end
