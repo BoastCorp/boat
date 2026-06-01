@@ -33,6 +33,11 @@ local Config = {
         height = 1400,
     },
     Obstacles = {},
+    Dock = {
+        x = 849,
+        y = 1148,
+        radius = 50, -- Collision radius for the dock
+    },
     WakeMaxLength = 110,
     RefreshRate = 50,
 }
@@ -58,6 +63,7 @@ local State = {
     money = 0,
     hold = 0,
     isPaused = false,
+    pausedByDock = false,
     currentScreen = "game",  -- "game" or "upgrade"
     upgrades = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
@@ -89,6 +95,7 @@ local waterFrameTime   = 0
 local levelTopImage = gfx.image.new('images/level/2-top')
 local levelCollisionImage = gfx.image.new('images/level/2-collision')
 local dockImage = gfx.image.new('images/level/dock-splash')
+local dockObjectImage = gfx.image.new('images/level/dock')
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
@@ -295,6 +302,7 @@ end
 local function resetRound()
     State.hold = 0
     State.isPaused = false
+    State.pausedByDock = false
     
     -- Recycle existing wake points into pool
     for _, p in ipairs(State.wake) do
@@ -512,6 +520,17 @@ local function updateInput()
         -- Clear wake so it doesn't look weird during the fast movement
         State.wake = {}
     end
+
+    -- Check for dock collision (trigger dock prompt)
+    local dx = boat.x - Config.Dock.x
+    local dy = boat.y - Config.Dock.y
+    local distSq = dx * dx + dy * dy
+    local dockRadius = Config.Dock.radius
+    if distSq < (dockRadius * dockRadius) then
+        State.isPaused = true
+        State.pausedByDock = true
+    end
+
     -- Record stern position for wake trail
     local fwd_x = boat.velocity_x
     local fwd_y = boat.velocity_y
@@ -744,6 +763,12 @@ local function drawContent()
         end
     end
 
+    -- Draw dock object in the world
+    if dockObjectImage then
+        local dx, dy = project(Config.Dock.x, Config.Dock.y)
+        dockObjectImage:drawAnchored(dx, dy, 0.5, 0.5)
+    end
+
     -- Draw boat (includes shadow with dithering) at screen center
     local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
     drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
@@ -787,7 +812,11 @@ local function drawContent()
 
         gfx.setImageDrawMode(gfx.kDrawModeCopy)
         gfx.setFont(roobert24)
-        gfx.drawText("HOLD FULL!", 135, 80)
+        if State.pausedByDock then
+            gfx.drawText("DOCK!", 175, 80)
+        else
+            gfx.drawText("HOLD FULL!", 135, 80)
+        end
         gfx.setFont(nil)
         gfx.drawText("Go back to dock?", 150, 115)
         gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
