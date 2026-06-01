@@ -410,8 +410,6 @@ local function updateInput()
         boat.boostFrames = 60   -- Duration of boost decay (1.2s at 50fps)
         -- Snap moveAngle to visual angle for immediate lunge in nose direction
         boat.moveAngle = boat.angle
-        -- Clear wake for a "kick-off" burst effect
-        State.wake = {}
     end
 
     -- Crank steers the boat (visual angle)
