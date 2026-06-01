@@ -88,7 +88,7 @@ local waterFrameTime   = 0
 -- Load level assets
 local levelTopImage = gfx.image.new('images/level/2-top')
 local levelCollisionImage = gfx.image.new('images/level/2-collision')
-local dockImage = gfx.image.new('images/level/dock')
+local dockImage = gfx.image.new('images/level/dock-splash')
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
