@@ -17,7 +17,7 @@ local Config = {
         rotationSpeed = 5,
         size = { w = 80, l = 80 },
         radius = 40,
-        capacity = 5,
+        capacity = math.huge, -- Unlimited capacity for time-based runs
     },
     Fish = {
         count = 5,
@@ -62,6 +62,8 @@ local State = {
     fish = {},
     money = 0,
     hold = 0,
+    roundDuration = 1200, -- 50 FPS * 24 seconds = 1200 frames
+    roundTime = 0,
     isPaused = false,
     pausedByDock = false,
     currentScreen = "game",  -- "game" or "upgrade"
@@ -69,7 +71,7 @@ local State = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
         { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
-        { name = "Capacity", level = 0 },  -- [4] Hold capacity: +3 slots per level
+        { name = "Time",     level = 0 },  -- [4] Round time: +3 seconds per level
     },
     selectedUpgrade = 1,
     debugEnabled = false,
@@ -293,14 +295,17 @@ end
 
 local function calculateRunIncome()
     -- Estimated income per full hold
-    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+    local duration = 24 + (State.upgrades[4].level * 3)
+    local fishPerSec = 0.5 -- hypothetical average
     local fishValue = 1 + State.upgrades[1].level
-    return maxCapacity * fishValue
+    return math.floor(duration * fishPerSec * fishValue)
 end
 
 -- Helper to fully reset boat + round
 local function resetRound()
     State.hold = 0
+    State.roundTime = 0
+    State.roundDuration = (24 + State.upgrades[4].level * 3) * 50
     State.isPaused = false
     State.pausedByDock = false
     
@@ -796,11 +801,12 @@ local function drawContent()
     gfx.setColor(gfx.kColorBlack)
     gfx.drawText("$" .. State.money, 4, 4)
 
-    -- Hold display (current / max)
-    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+    -- Timer display (remaining seconds)
+    local remaining = math.ceil((State.roundDuration - State.roundTime) / Config.RefreshRate)
+    if remaining < 0 then remaining = 0 end
     gfx.setFont(roobert24)
     gfx.setColor(gfx.kColorBlack)
-    gfx.drawText(State.hold .. "/" .. maxCapacity, 340, 4)
+    gfx.drawText(remaining, 360, 4)
     gfx.setFont(nil)
 
     -- Pause message (displayed over the game)
@@ -815,7 +821,7 @@ local function drawContent()
         if State.pausedByDock then
             gfx.drawText("DOCK!", 175, 80)
         else
-            gfx.drawText("HOLD FULL!", 135, 80)
+            gfx.drawText("TIME UP!", 155, 80)
         end
         gfx.setFont(nil)
         gfx.drawText("Go back to dock?", 150, 115)
@@ -1027,26 +1033,12 @@ function playdate.update()
             updateInput()
             updateFishMovement()
             State.totalFramesPlayed = State.totalFramesPlayed + 1
-        end
-
-        -- Check if hold is full
-        local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
-        if State.hold >= maxCapacity and not State.isPaused then
-            State.isPaused = true
-            -- Print progression snapshot to console
-            local secs = math.floor(State.totalFramesPlayed / Config.RefreshRate)
-            local mins = math.floor(secs / 60)
-            local income = calculateRunIncome()
-            local u = State.upgrades
-            print("runs=" .. State.totalRunsPlayed ..
-                  " money=$" .. State.money ..
-                  " hold=" .. State.hold .. "/" .. maxCapacity ..
-                  " time=" .. mins .. "m" .. (secs % 60) .. "s" ..
-                  " income=$" .. income .. "/run" ..
-                  " V=" .. u[1].level ..
-                  " Sp=" .. u[2].level ..
-                  " L=" .. u[3].level ..
-                  " C=" .. u[4].level)
+            
+            -- Increment round time
+            State.roundTime = State.roundTime + 1
+            if State.roundTime >= State.roundDuration then
+                State.isPaused = true
+            end
         end
 
         -- Pause menu: A = Dock, B = Stay (new round)
