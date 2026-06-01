@@ -56,6 +56,8 @@ local State = {
         velocity_y = 0,
         bounceSpeed = 0,  -- New: persistent bounce momentum
         bounceFrames = 0, -- New: duration of bounce override
+        boostSpeed = 0,   -- Arcade boost
+        boostFrames = 0,
     },
     wake = {},
     wakePool = {}, -- Pre-allocated/recycled tables for wake points
@@ -343,6 +345,8 @@ local function resetRound()
     State.boat.currentSpeed = 0
     State.boat.velocity_x = 0
     State.boat.velocity_y = 0
+    State.boat.boostSpeed = 0
+    State.boat.boostFrames = 0
     State.totalRunsPlayed = State.totalRunsPlayed + 1
     spawnFish()
 end
@@ -400,6 +404,16 @@ end
 local function updateInput()
     local boat = State.boat
 
+    -- Trigger Boost (Up button)
+    if playdate.buttonJustPressed(playdate.kButtonUp) and boat.boostFrames <= 0 then
+        boat.boostSpeed = 11.0 -- Initial arcade burst speed
+        boat.boostFrames = 60   -- Duration of boost decay (1.2s at 50fps)
+        -- Snap moveAngle to visual angle for immediate lunge in nose direction
+        boat.moveAngle = boat.angle
+        -- Clear wake for a "kick-off" burst effect
+        State.wake = {}
+    end
+
     -- Crank steers the boat (visual angle)
     local crankChange = playdate.getCrankChange()
     boat.angle = boat.angle + crankChange
@@ -413,7 +427,7 @@ local function updateInput()
     local speedMult = 1 + State.upgrades[2].level * 0.15
     local engineTargetSpeed = Config.Boat.baseSpeed * speedMult * dragFactor
 
-    -- Handle Bounce Momentum (Soccer ball physics)
+    -- Handle Momentum (Bounce or Boost)
     if boat.bounceFrames > 0 then
         -- While bouncing, speed decays from the impact force toward engine speed
         boat.currentSpeed = boat.bounceSpeed
@@ -421,9 +435,20 @@ local function updateInput()
         boat.bounceFrames = boat.bounceFrames - 1
         
         -- Override drift: keep the boat moving in the reflected bounce direction
-        -- (No changes to moveAngle here, let it fly)
         if boat.bounceFrames == 0 then
             boat.bounceSpeed = 0
+        end
+    elseif boat.boostFrames > 0 then
+        -- Arcade Boost logic: propel forward and decay
+        boat.currentSpeed = math.max(engineTargetSpeed, boat.boostSpeed)
+        boat.boostSpeed = boat.boostSpeed * 0.97 -- Decay multiplier (lose 3% per frame)
+        boat.boostFrames = boat.boostFrames - 1
+        
+        -- During boost, align movement direction with nose faster than normal
+        boat.moveAngle = boat.moveAngle + (boat.angle - boat.moveAngle) * 0.2
+        
+        if boat.boostFrames == 0 then
+            boat.boostSpeed = 0
         end
     else
         -- Normal driving physics
