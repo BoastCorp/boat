@@ -576,22 +576,33 @@ local function updateInput()
 
     local wake = State.wake
 
-    -- Smooth new point toward previous to reduce jitter
-    if #wake > 0 then
+    -- Distance-based wake: only add a point if we've moved at least 2 pixels
+    local shouldAddPoint = false
+    if #wake == 0 then
+        shouldAddPoint = true
+    else
         local prev = wake[1]
-        sternWx = sternWx * 0.6 + prev.wx * 0.4
-        sternWy = sternWy * 0.6 + prev.wy * 0.4
+        local dx = sternWx - prev.wx
+        local dy = sternWy - prev.wy
+        if (dx * dx + dy * dy) >= 4 then -- 2 pixels squared
+            shouldAddPoint = true
+            -- Smooth new point toward previous to reduce jitter
+            sternWx = sternWx * 0.6 + prev.wx * 0.4
+            sternWy = sternWy * 0.6 + prev.wy * 0.4
+        end
     end
 
-    -- Pull from pool or create new table
-    local p = table.remove(State.wakePool) or {}
-    p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
+    if shouldAddPoint then
+        -- Pull from pool or create new table
+        local p = table.remove(State.wakePool) or {}
+        p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
 
-    table.insert(wake, 1, p)
-    local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
-    if #wake > wakeMax then
-        local removed = table.remove(wake)
-        table.insert(State.wakePool, removed)
+        table.insert(wake, 1, p)
+        local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
+        if #wake > wakeMax then
+            local removed = table.remove(wake)
+            table.insert(State.wakePool, removed)
+        end
     end
 
     -- Loop detection: if stern gets close to an older wake point, catch fish inside
