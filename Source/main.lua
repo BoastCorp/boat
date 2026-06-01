@@ -801,13 +801,25 @@ local function drawContent()
     gfx.setColor(gfx.kColorBlack)
     gfx.drawText("$" .. State.money, 4, 4)
 
-    -- Timer display (remaining seconds)
-    local remaining = math.ceil((State.roundDuration - State.roundTime) / Config.RefreshRate)
-    if remaining < 0 then remaining = 0 end
-    gfx.setFont(roobert24)
+    -- Gas Meter (replaces numerical timer)
+    local gasWidth = 100
+    local gasHeight = 12
+    local gasX = 400 - gasWidth - 10
+    local gasY = 10
+    
+    local fillPercent = math.max(0, (State.roundDuration - State.roundTime) / State.roundDuration)
+    local fillWidth = math.floor(gasWidth * fillPercent)
+    
+    -- Draw meter background/border
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRect(gasX, gasY, gasWidth, gasHeight)
     gfx.setColor(gfx.kColorBlack)
-    gfx.drawText(remaining, 360, 4)
-    gfx.setFont(nil)
+    gfx.drawRect(gasX, gasY, gasWidth, gasHeight)
+    
+    -- Draw fill
+    if fillWidth > 0 then
+        gfx.fillRect(gasX, gasY, fillWidth, gasHeight)
+    end
 
     -- Pause message (displayed over the game)
     if State.isPaused then
@@ -821,11 +833,12 @@ local function drawContent()
         if State.pausedByDock then
             gfx.drawText("DOCK!", 175, 80)
         else
-            gfx.drawText("TIME UP!", 155, 80)
+            gfx.drawText("OUT OF GAS!", 135, 80)
         end
-        gfx.setFont(nil)
+        gfx.setFont(roobert11)
         gfx.drawText("Go back to dock?", 150, 115)
         gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
+        gfx.setFont(nil)
     end
 
     -- Small debug panel (top-right, tiny font, toggle with Menu button)
