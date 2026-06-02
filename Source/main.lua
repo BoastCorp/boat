@@ -985,59 +985,63 @@ end
 local function drawUpgradeScreen()
     gfx.clear(gfx.kColorWhite)
     gfx.setColor(gfx.kColorBlack)
-    gfx.setFont(roobert11)
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
 
-    -- Wallet header
-    gfx.drawText("Wallet: $" .. State.money .. "   Est. Income: $" .. calculateRunIncome(), 10, 8)
+    -- Wallet footer (more visually pleasing at bottom)
+    gfx.drawLine(0, 210, 400, 210)
+    gfx.setFont(roobert24)
+    gfx.drawText("$" .. State.money, 10, 212)
+    gfx.setFont(roobert11)
+    gfx.drawText("D-Pad: Select   A: Buy Upgrade   B: Back", 140, 218)
 
-    -- Divider
-    gfx.drawLine(0, 24, 400, 24)
+    -- Grid logic (2x2)
+    local padding = 10
+    local gridY = 10
+    local gridH = 190
+    local cellW = (400 - padding * 3) / 2
+    local cellH = (gridH - padding) / 2
 
-    -- List of upgrades
-    local listStartY = 36
-    local rowHeight = 26
     for i, upgrade in ipairs(State.upgrades) do
-        local y = listStartY + (i - 1) * rowHeight
+        local col = (i - 1) % 2
+        local row = math.floor((i - 1) / 2)
+        local x = padding + col * (cellW + padding)
+        local y = gridY + row * (cellH + padding)
 
-        -- Highlight selected row
-        if i == State.selectedUpgrade then
+        local isSelected = (i == State.selectedUpgrade)
+
+        -- Draw box
+        if isSelected then
             gfx.setColor(gfx.kColorBlack)
-            gfx.fillRect(0, y - 2, 400, rowHeight)
+            gfx.fillRect(x, y, cellW, cellH)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         else
+            gfx.setColor(gfx.kColorBlack)
+            gfx.drawRect(x, y, cellW, cellH)
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 
-        -- Name on left
-        gfx.drawText(upgrade.name, 20, y)
+        -- Name
+        gfx.setFont(roobert24)
+        gfx.drawText(upgrade.name, x + 10, y + 10)
 
-        -- Level in middle
-        local maxLevel = (i == 2 or i == 3) and 12 or 24 -- Speed & Line capped at 12
-        local levelStr = upgrade.level .. "/" .. maxLevel
-        gfx.drawText(levelStr, 120, y)
+        -- Level
+        gfx.setFont(roobert11)
+        local maxLevel = (i == 2 or i == 3) and 12 or 24
+        gfx.drawText("Level " .. upgrade.level .. " / " .. maxLevel, x + 10, y + 45)
 
-        -- Cost to next level
+        -- Cost
         if upgrade.level < maxLevel then
             local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
             local canAfford = State.money >= nextCost
-            local costStr = canAfford and ("$" .. nextCost) or ("$" .. nextCost .. " ?")
-            gfx.drawText(costStr, 180, y)
+            local costStr = "Cost: $" .. nextCost
+            if not canAfford and not isSelected then
+                -- Optional: draw cost differently if unaffordable?
+            end
+            gfx.drawText(costStr, x + 10, y + 65)
         else
-            gfx.drawText("MAX", 180, y)
-        end
-
-        -- Arrows and level on right (only on selected row)
-        if i == State.selectedUpgrade then
-            gfx.drawText("< >", 320, y)
+            gfx.drawText("MAXED", x + 10, y + 65)
         end
     end
-
-    -- Bottom hint
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawLine(0, 216, 400, 216)
-    gfx.drawText("crank/up/down: select   A: buy   left: refund   B: continue", 10, 220)
 
     gfx.setFont(nil)
 end
@@ -1180,22 +1184,22 @@ function playdate.update()
         drawDockScreen()
 
     elseif State.currentScreen == "upgrade" then
-        -- Crank scrolls up/down through the list
-        local crankChange = playdate.getCrankChange()
-        if crankChange > 10 then
-            State.selectedUpgrade = math.min(#State.upgrades, State.selectedUpgrade + 1)
-        elseif crankChange < -10 then
-            State.selectedUpgrade = math.max(1, State.selectedUpgrade - 1)
-        end
-
+        -- 2D Navigation for 2x2 grid
+        -- 1:Value 2:Speed
+        -- 3:Line  4:Time
         local sel = State.selectedUpgrade
-
         if playdate.buttonJustPressed(playdate.kButtonUp) then
-            State.selectedUpgrade = math.max(1, sel - 1)
+            if sel > 2 then State.selectedUpgrade = sel - 2 end
+        elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+            if sel <= 2 then State.selectedUpgrade = sel + 2 end
+        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
+            if sel % 2 == 0 then State.selectedUpgrade = sel - 1 end
+        elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+            if sel % 2 == 1 then State.selectedUpgrade = sel + 1 end
         end
-        if playdate.buttonJustPressed(playdate.kButtonDown) then
-            State.selectedUpgrade = math.min(#State.upgrades, sel + 1)
-        end
+
+        sel = State.selectedUpgrade
+
         if playdate.buttonJustPressed(playdate.kButtonA) then
             -- A = buy next level
             local nextLevel = State.upgrades[sel].level + 1
@@ -1209,15 +1213,7 @@ function playdate.update()
                 end
             end
         end
-        if playdate.buttonJustPressed(playdate.kButtonLeft) then
-            -- Left = refund one level
-            local minLevel = 0
-            if State.upgrades[sel].level > minLevel then
-                local refund = calculateUpgradeCost(sel, State.upgrades[sel].level)
-                State.money = State.money + refund
-                State.upgrades[sel].level = State.upgrades[sel].level - 1
-            end
-        end
+
         if playdate.buttonJustPressed(playdate.kButtonB) then
             State.currentScreen = "dock"
         end
