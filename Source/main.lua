@@ -473,14 +473,12 @@ local function updateInput()
     -- Check for boundary collision (play area limit)
     -- Skip checks if we just bounced (cooldown to prevent jitter)
     local collisionDetected = false
-    if boat.bounceFrames < 15 then
+    if boat.bounceFrames <= 0 then
         -- Calculate four corners of boat bounding box (rotated by boat angle)
-        -- angle 0 = up, 90 = right, 180 = down, 270 = left (clockwise)
         local angleRad = math.rad(boat.angle)
         local cosA = math.cos(angleRad)
         local sinA = math.sin(angleRad)
 
-        -- Corners in local space (Y is forward, X is right):
         local corners = {
             { boat.x - boatSide * cosA + boatFront * sinA, boat.y - boatSide * sinA - boatFront * cosA }, -- front-left
             { boat.x + boatSide * cosA + boatFront * sinA, boat.y + boatSide * sinA - boatFront * cosA }, -- front-right
@@ -490,23 +488,16 @@ local function updateInput()
         boat.corners = corners -- Store for debug drawing
 
         for _, corner in ipairs(corners) do
-            -- Boundary check
             if corner[1] < 0 or corner[1] > playArea.width or
                corner[2] < 0 or corner[2] > playArea.height then
                 collisionDetected = true
                 break
             end
-
-            -- Obstacle check (image-based collision)
-            if levelCollisionImage then
-                if levelCollisionImage:sample(corner[1], corner[2]) ~= gfx.kColorClear then
-                    collisionDetected = true
-                    break
-                end
+            if levelCollisionImage and levelCollisionImage:sample(corner[1], corner[2]) ~= gfx.kColorClear then
+                collisionDetected = true
+                break
             end
         end
-
-        -- Additional center-point check for robustness
         if not collisionDetected and levelCollisionImage then
             if levelCollisionImage:sample(boat.x, boat.y) ~= gfx.kColorClear then
                 collisionDetected = true
@@ -515,6 +506,10 @@ local function updateInput()
     end
 
     if collisionDetected then
+        -- Rewind position to previous frame to avoid "teleporting" into the wall at high speed
+        boat.x = boat.x - boat.velocity_x
+        boat.y = boat.y - boat.velocity_y
+
         -- 1. Find collision normal
         local nx, ny = 0, 0
         local sampleDist = 20
@@ -531,22 +526,92 @@ local function updateInput()
         if nLen > 0 then nx, ny = nx / nLen, ny / nLen else nx, ny = -boat.velocity_x, -boat.velocity_y end
 
         -- 2. Physical Bounce Impulse
-        -- Nudge 10px (increased from 4) to clear wall immediately
-        boat.x = boat.x + nx * 10
-        boat.y = boat.y + ny * 10
+        -- Nudge 4px to give some breathing room
+        boat.x = boat.x + nx * 4
+        boat.y = boat.y + ny * 4
 
-        -- Reflect current movement vector
-        local dot = boat.velocity_x * nx + boat.velocity_y * ny
-        local rx = boat.velocity_x - 2 * dot * nx
-        local ry = boat.velocity_y - 2 * dot * ny
+        -- Calculate reflection angle using normal velocity
+        local moveAngle_rad = math.rad(boat.moveAngle - 90)
+        local vx = math.cos(moveAngle_rad) * engineTargetSpeed
+        local vy = math.sin(moveAngle_rad) * engineTargetSpeed
+
+        local dot = vx * nx + vy * ny
+        local rx = vx - 2 * dot * nx
+        local ry = vy - 2 * dot * ny
         
-        -- Set the bounce state
+        -- Set the bounce state: reflect at normal driving speed
         boat.moveAngle = math.deg(math.atan2(ry, rx)) + 90
-        boat.bounceSpeed = 4.5  -- Gentler initial speed
-        boat.bounceFrames = 20  -- Longer duration for visible travel (~0.4s)
+        boat.bounceSpeed = engineTargetSpeed 
+        boat.bounceFrames = 12 -- Slightly longer bounce for stability
+        boat.currentSpeed = engineTargetSpeed
+        
+        -- Cancel boost on impact
+        boat.boostSpeed = 0
+        boat.boostFrames = 0
         
         -- Clear wake so it doesn't look weird during the fast movement
         State.wake = {}
+    end
+
+    -- ---------------------------------------------------------
+    -- ANTI-STUCK: Persistent overlap resolution
+    -- Runs every frame. If any part of the hull is in land,
+    -- calculate a repulsion vector to push it out.
+    -- ---------------------------------------------------------
+    local isStuck = false
+    local angleRad = math.rad(boat.angle)
+    local cosA = math.cos(angleRad)
+    local sinA = math.sin(angleRad)
+    local checkPoints = {
+        { boat.x, boat.y }, -- center
+        { boat.x - boatSide * cosA + boatFront * sinA, boat.y - boatSide * sinA - boatFront * cosA }, -- front-left
+        { boat.x + boatSide * cosA + boatFront * sinA, boat.y + boatSide * sinA - boatFront * cosA }, -- front-right
+        { boat.x - boatSide * cosA - boatBack * sinA,  boat.y - boatSide * sinA + boatBack * cosA  }, -- back-left
+        { boat.x + boatSide * cosA - boatBack * sinA,  boat.y + boatSide * sinA + boatBack * cosA  }, -- back-right
+        -- Mid-points
+        { boat.x - boatSide * cosA, boat.y - boatSide * sinA }, -- mid-left
+        { boat.x + boatSide * cosA, boat.y + boatSide * sinA }, -- mid-right
+        { boat.x + boatFront * sinA, boat.y - boatFront * cosA }, -- nose
+        { boat.x - boatBack * sinA,  boat.y + boatBack * cosA  }, -- stern
+        -- Extra stern points to prevent "catching" the back
+        { boat.x - (boatSide * 0.5) * cosA - boatBack * sinA, boat.y - (boatSide * 0.5) * sinA + boatBack * cosA },
+        { boat.x + (boatSide * 0.5) * cosA - boatBack * sinA, boat.y + (boatSide * 0.5) * sinA + boatBack * cosA },
+    }
+
+    local repulsionX, repulsionY = 0, 0
+    for _, p in ipairs(checkPoints) do
+        local hitting = false
+        if p[1] < 0 or p[1] > playArea.width or p[2] < 0 or p[2] > playArea.height then
+            hitting = true
+        elseif levelCollisionImage and levelCollisionImage:sample(p[1], p[2]) ~= gfx.kColorClear then
+            hitting = true
+        end
+
+        if hitting then
+            isStuck = true
+            -- Calculate vector from stuck point to boat center
+            local dx = boat.x - p[1]
+            local dy = boat.y - p[2]
+            local dist = math.sqrt(dx*dx + dy*dy)
+            if dist > 0 then
+                repulsionX = repulsionX + (dx / dist)
+                repulsionY = repulsionY + (dy / dist)
+            else
+                -- If center is stuck, use a default fallback (push away from previous movement)
+                repulsionX = repulsionX - boat.velocity_x
+                repulsionY = repulsionY - boat.velocity_y
+            end
+        end
+    end
+
+    if isStuck then
+        local rLen = math.sqrt(repulsionX * repulsionX + repulsionY * repulsionY)
+        if rLen > 0 then
+            local nx, ny = repulsionX / rLen, repulsionY / rLen
+            -- Forcefully nudge boat away from the stuck points (5.0px per frame)
+            boat.x = boat.x + nx * 5.0
+            boat.y = boat.y + ny * 5.0
+        end
     end
 
     -- Check for dock collision (trigger dock prompt)
