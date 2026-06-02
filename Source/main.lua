@@ -689,11 +689,10 @@ local function updateInput()
                 for j = 1, i do
                     poly[j] = wake[j]
                 end
-                -- Catch fish inside the polygon (capped by Capacity level)
-                local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
+                -- Catch fish inside the polygon
                 local caught = 0
                 for _, f in ipairs(State.fish) do
-                    if f.alive and pointInPolygon(f.x, f.y, poly) and (State.hold + caught) < maxCapacity then
+                    if f.alive and pointInPolygon(f.x, f.y, poly) then
                         f.alive = false
                         State.money = State.money + 1 + State.upgrades[1].level
                         caught = caught + 1
@@ -701,21 +700,6 @@ local function updateInput()
                 end
 
                 State.hold = State.hold + caught
-
-                -- Multi-fish catch bonus
-                local bonusMultiplier = 1.0
-                if caught >= 2 then
-                    bonusMultiplier = 1.1  -- +10% for 2 fish
-                end
-                if caught >= 3 then
-                    bonusMultiplier = 1.25  -- +25% for 3 fish
-                end
-                if caught >= 4 then
-                    bonusMultiplier = 1.5  -- +50% for 4+ fish
-                end
-                if caught > 0 and bonusMultiplier > 1.0 then
-                    State.money = State.money + math.floor((caught * (1 + State.upgrades[1].level)) * (bonusMultiplier - 1))
-                end
                 
                 -- Recycle wake into pool after catching
                 for _, wp in ipairs(wake) do
