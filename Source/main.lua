@@ -106,8 +106,14 @@ local tapeImage = gfx.image.new('images/menu/tape')
 
 -- Music
 local menuMusic = playdate.sound.fileplayer.new('sound/music/boxset - wedelivery')
+local menuFilter = playdate.sound.twopolefilter.new(playdate.sound.kFilterLowPass)
+local menuChannel = playdate.sound.channel.new()
+menuFilter:setFrequency(20000)
+menuChannel:addEffect(menuFilter)
+
 if menuMusic then
     menuMusic:setVolume(0.5)
+    menuChannel:addSource(menuMusic)
 end
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
@@ -1173,6 +1179,15 @@ function playdate.update()
     if State.currentScreen == "dock" or State.currentScreen == "upgrade" or State.currentScreen == "music" then
         if menuMusic and not menuMusic:isPlaying() then
             menuMusic:play(0)
+        end
+
+        -- Muffle effect: Clear on dock, muffled on sub-menus
+        if menuFilter then
+            if State.currentScreen == "dock" then
+                menuFilter:setFrequency(20000)
+            else
+                menuFilter:setFrequency(800)
+            end
         end
     else
         if menuMusic and menuMusic:isPlaying() then
