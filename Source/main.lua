@@ -1181,12 +1181,14 @@ function playdate.update()
             menuMusic:play(0)
         end
 
-        -- Muffle effect: Clear on dock, muffled on sub-menus
+        -- Muffle and volume effect: Clear/Loud on dock, muffled/quieter on sub-menus
         if menuFilter then
             if State.currentScreen == "dock" then
                 menuFilter:setFrequency(20000)
+                if menuMusic then menuMusic:setVolume(0.5) end
             else
                 menuFilter:setFrequency(800)
+                if menuMusic then menuMusic:setVolume(0.375) end -- 25% lower than 0.5
             end
         end
     else

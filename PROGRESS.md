@@ -215,7 +215,31 @@ Replaced the round timer with a **Hold System**:
 
 ---
 
-## Current Game Config (May 29, 2026)
+## Phase 10 — Soundtrack, Navigation & Audio Polish (June 2, 2026)
+
+### Audio System & Effects
+- **Menu Music**: Integrated background music for the Dock and its sub-menus (`boxset - wedelivery.mp3`).
+- **Muffled Filter**: Implemented a `playdate.sound.twopolefilter` (Low-Pass).
+  - **Dock**: Cutoff at 20,000Hz (clear sound).
+  - **Sub-menus (Upgrades/Music)**: Cutoff drops to 800Hz for a muffled "behind a wall" effect.
+- **Audio Infrastructure**: Refactored to use a dedicated `playdate.sound.channel` for the menu music, allowing robust effect routing via `addSource()` and ensuring compatibility with the Playdate SDK.
+
+### Soundtrack Selection Menu
+- **New Screen**: Accessed by pressing **Right** from the Dock.
+- **Tape Grid**: Displays a 3x2 grid of tapes using 75x74px full-size assets (`tape.png`).
+- **Persistence**: Remembers and indicates the currently selected track with a visual marker, even after navigating away and returning.
+- **Navigation**: Custom D-Pad logic for 3-column navigation; A to select a track, B to return to the Dock.
+
+### Navigation & Drawing Robustness
+- **Transition Fix**: Restructured `playdate.update` to separate State Updates from Drawing, guaranteeing a render call every frame and eliminating "blank screen" frames during transitions.
+- **B-Button Logic**: Fixed the Upgrade screen B-button to correctly return the player to the Dock, with prioritized input handling.
+- **Drawing Polish**: 
+  - Added `gfx.clear()` to the dock drawing function for safety.
+  - Implemented draw-mode resets (`kDrawModeCopy`) at the end of screen drawing functions to prevent state pollution (e.g., text highlights causing invisible images on other screens).
+
+---
+
+## Current Game Config (June 2, 2026)
 
 ```lua
 Config.Boat = {
