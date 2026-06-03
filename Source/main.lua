@@ -76,6 +76,8 @@ local State = {
         { name = "Time",     level = 0 },  -- [4] Round time: +3 seconds per level
     },
     selectedUpgrade = 1,
+    selectedMusic = 1,          -- Currently active track
+    musicSelectionIndex = 1,    -- Cursor position in music menu
     debugEnabled = false,
     debugSelectedUpgrade = 1,
     totalRunsPlayed = 0,
@@ -100,6 +102,13 @@ local levelTopImage = gfx.image.new('images/level/2-top')
 local levelCollisionImage = gfx.image.new('images/level/2-collision')
 local dockImage = gfx.image.new('images/level/dock-splash')
 local dockObjectImage = gfx.image.new('images/level/dock')
+local tapeImage = gfx.image.new('images/menu/tape')
+
+-- Music
+local menuMusic = playdate.sound.fileplayer.new('sound/music/boxset - wedelivery')
+if menuMusic then
+    menuMusic:setVolume(0.5)
+end
 
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
@@ -955,10 +964,10 @@ end
 -- Dock Screen
 -- ---------------------------------------------------------
 local function drawDockScreen()
+    gfx.clear(gfx.kColorWhite)
     if dockImage then
         dockImage:draw(0, 0)
     else
-        gfx.clear(gfx.kColorWhite)
         gfx.drawText("DOCK (Image missing)", 100, 100)
     end
 end
@@ -1027,6 +1036,66 @@ local function drawUpgradeScreen()
         end
     end
 
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.setFont(nil)
+end
+
+-- ---------------------------------------------------------
+-- Music Screen
+-- ---------------------------------------------------------
+local function drawMusicScreen()
+    gfx.clear(gfx.kColorWhite)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Header
+    gfx.setFont(roobert24)
+    gfx.drawText("SOUNDTRACK", 120, 10)
+    gfx.drawLine(0, 40, 400, 40)
+
+    -- 3x2 Grid (3 columns, 2 rows)
+    local colPadding = 30
+    local rowPadding = 10
+    local tapeW, tapeH = 75, 74
+    local gridWidth = (3 * tapeW) + (2 * colPadding)
+    local startX = (400 - gridWidth) / 2
+    local startY = 55
+
+    for i = 1, 6 do
+        local col = (i - 1) % 3
+        local row = math.floor((i - 1) / 3)
+        local x = startX + col * (tapeW + colPadding)
+        local y = startY + row * (tapeH + rowPadding)
+
+        local isCursor = (i == State.musicSelectionIndex)
+        local isSelected = (i == State.selectedMusic)
+
+        -- Selection highlight (box behind cursor)
+        if isCursor then
+            gfx.setLineWidth(3)
+            gfx.drawRect(x - 5, y - 5, tapeW + 10, tapeH + 10)
+        end
+
+        -- Draw Tape (Full size 75x74)
+        if tapeImage then
+            tapeImage:draw(x, y)
+        else
+            gfx.drawRect(x, y, tapeW, tapeH)
+            gfx.drawText("TAPE " .. i, x + 5, y + 25)
+        end
+
+        -- "Playing" or "Active" indicator
+        if isSelected then
+            gfx.fillCircleAtPoint(x + tapeW - 8, y + 8, 5)
+        end
+    end
+
+    -- Footer
+    gfx.drawLine(0, 210, 400, 210)
+    gfx.setFont(roobert11)
+    gfx.drawText("D-Pad: Navigate   A: Select Track   B: Back", 100, 218)
+    
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.setFont(nil)
 end
 
@@ -1100,26 +1169,33 @@ end
 -- Main Loop
 -- ---------------------------------------------------------
 function playdate.update()
+    -- Music management: Play on dock/upgrade/music screens, stop otherwise
+    if State.currentScreen == "dock" or State.currentScreen == "upgrade" or State.currentScreen == "music" then
+        if menuMusic and not menuMusic:isPlaying() then
+            menuMusic:play(0)
+        end
+    else
+        if menuMusic and menuMusic:isPlaying() then
+            menuMusic:stop()
+        end
+    end
 
     -- A + B pressed together = jump to Tier 2
     if playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB) then
-        -- Jump to Tier 2: set to run 50 with $300 and some Tier 1 upgrades
         State.totalRunsPlayed = 50
         State.money = 300
-        State.upgrades[1].level = 5  -- Value L5
-        State.upgrades[2].level = 3  -- Speed L3
-        State.upgrades[3].level = 5  -- Line L5
-        State.upgrades[4].level = 2  -- Capacity L2
+        State.upgrades[1].level = 5
+        State.upgrades[2].level = 3
+        State.upgrades[3].level = 5
+        State.upgrades[4].level = 2
     end
 
-    -- Menu button: toggle debug panel; Menu+A = debug screen; Menu+B = reset upgrades; Menu+Right = +$500; Menu+Up = boat test
+    -- Menu button shortcuts
     if playdate.buttonJustPressed(playdate.kButtonMenu) then
         if playdate.buttonIsPressed(playdate.kButtonA) then
             State.currentScreen = "debug"
         elseif playdate.buttonIsPressed(playdate.kButtonB) then
-            for i = 1, #State.upgrades do
-                State.upgrades[i].level = 0
-            end
+            for i = 1, #State.upgrades do State.upgrades[i].level = 0 end
             State.money = 0
             State.totalRunsPlayed = 0
         elseif playdate.buttonIsPressed(playdate.kButtonRight) then
@@ -1129,21 +1205,20 @@ function playdate.update()
         end
     end
 
+    -- ---------------------------------------------------------
+    -- 1. State Updates
+    -- ---------------------------------------------------------
     if State.currentScreen == "game" then
-        -- Only update input and physics if not paused
         if not State.isPaused then
             updateInput()
             updateFishMovement()
             State.totalFramesPlayed = State.totalFramesPlayed + 1
-            
-            -- Increment round time
             State.roundTime = State.roundTime + 1
             if State.roundTime >= State.roundDuration then
                 State.isPaused = true
             end
         end
 
-        -- Pause menu: A = Dock, B = Stay (new round)
         if State.isPaused then
             if playdate.buttonJustPressed(playdate.kButtonA) then
                 State.isPaused = false
@@ -1152,10 +1227,7 @@ function playdate.update()
                 resetRound()
             end
         end
-
         waterFrameTime = waterFrameTime + 1
-        gfx.clear()
-        drawContent()
 
     elseif State.currentScreen == "dock" then
         if playdate.buttonJustPressed(playdate.kButtonUp) then
@@ -1163,49 +1235,60 @@ function playdate.update()
             State.currentScreen = "game"
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.currentScreen = "upgrade"
+        elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+            State.currentScreen = "music"
         end
-
-        drawDockScreen()
 
     elseif State.currentScreen == "upgrade" then
-        -- 2D Navigation for 2x2 grid
-        -- 1:Value 2:Speed
-        -- 3:Line  4:Time
-        local sel = State.selectedUpgrade
-        if playdate.buttonJustPressed(playdate.kButtonUp) then
-            if sel > 2 then State.selectedUpgrade = sel - 2 end
-        elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-            if sel <= 2 then State.selectedUpgrade = sel + 2 end
-        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
-            if sel % 2 == 0 then State.selectedUpgrade = sel - 1 end
-        elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-            if sel % 2 == 1 then State.selectedUpgrade = sel + 1 end
-        end
+        if playdate.buttonJustPressed(playdate.kButtonB) then
+            State.currentScreen = "dock"
+        else
+            local sel = State.selectedUpgrade
+            if playdate.buttonJustPressed(playdate.kButtonUp) then
+                if sel > 2 then State.selectedUpgrade = sel - 2 end
+            elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+                if sel <= 2 then State.selectedUpgrade = sel + 2 end
+            elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
+                if sel % 2 == 0 then State.selectedUpgrade = sel - 1 end
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                if sel % 2 == 1 then State.selectedUpgrade = sel + 1 end
+            end
 
-        sel = State.selectedUpgrade
-
-        if playdate.buttonJustPressed(playdate.kButtonA) then
-            -- A = buy next level
-            local nextLevel = State.upgrades[sel].level + 1
-            -- Speed (2) and Line (3) capped at 12; Value/Capacity capped at 24
-            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
-            if nextLevel <= maxLevel then
-                local cost = calculateUpgradeCost(sel, nextLevel)
-                if State.money >= cost then
-                    State.money = State.money - cost
-                    State.upgrades[sel].level = nextLevel
+            sel = State.selectedUpgrade
+            if playdate.buttonJustPressed(playdate.kButtonA) then
+                local nextLevel = State.upgrades[sel].level + 1
+                local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+                if nextLevel <= maxLevel then
+                    local cost = calculateUpgradeCost(sel, nextLevel)
+                    if State.money >= cost then
+                        State.money = State.money - cost
+                        State.upgrades[sel].level = nextLevel
+                    end
                 end
             end
         end
 
+    elseif State.currentScreen == "music" then
         if playdate.buttonJustPressed(playdate.kButtonB) then
             State.currentScreen = "dock"
+        else
+            local sel = State.musicSelectionIndex
+            if playdate.buttonJustPressed(playdate.kButtonUp) then
+                if sel > 3 then State.musicSelectionIndex = sel - 3 end
+            elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+                if sel <= 3 then State.musicSelectionIndex = sel + 3 end
+            elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
+                if sel % 3 ~= 1 then State.musicSelectionIndex = sel - 1 end
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                if sel % 3 ~= 0 then State.musicSelectionIndex = sel + 1 end
+            end
+
+            if playdate.buttonJustPressed(playdate.kButtonA) then
+                State.selectedMusic = State.musicSelectionIndex
+            end
         end
 
-        drawUpgradeScreen()
-
     elseif State.currentScreen == "debug" then
-        -- Debug menu: up/down select, left/right set level directly (free, no cost)
         local sel = State.debugSelectedUpgrade
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.debugSelectedUpgrade = math.max(1, sel - 1)
@@ -1217,7 +1300,6 @@ function playdate.update()
             local maxLevel = (sel == 2 or sel == 3) and 12 or 24
             State.upgrades[sel].level = math.min(maxLevel, State.upgrades[sel].level + 1)
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
-            -- Buy next level at proper cost
             local nextLevel = State.upgrades[sel].level + 1
             local maxLevel = (sel == 2 or sel == 3) and 12 or 24
             if nextLevel <= maxLevel then
@@ -1227,21 +1309,29 @@ function playdate.update()
                     State.upgrades[sel].level = nextLevel
                 end
             end
-        elseif playdate.buttonJustPressed(playdate.kButtonMenu) then
-            if playdate.buttonIsPressed(playdate.kButtonA) then
-                State.money = State.money + 500
-            elseif playdate.buttonIsPressed(playdate.kButtonB) then
-                for i = 1, #State.upgrades do
-                    State.upgrades[i].level = 0
-                end
-                State.money = 0
-                State.totalRunsPlayed = 0
-            end
         elseif playdate.buttonJustPressed(playdate.kButtonB) then
             State.currentScreen = "game"
         end
+    end
 
+    -- ---------------------------------------------------------
+    -- 2. Drawing
+    -- ---------------------------------------------------------
+    if State.currentScreen == "game" then
+        gfx.clear()
+        drawContent()
+    elseif State.currentScreen == "dock" then
+        drawDockScreen()
+    elseif State.currentScreen == "upgrade" then
+        drawUpgradeScreen()
+    elseif State.currentScreen == "music" then
+        drawMusicScreen()
+    elseif State.currentScreen == "debug" then
         drawDebugMenu()
+    else
+        -- Fallback: unknown screen
+        gfx.clear(gfx.kColorWhite)
+        gfx.drawText("Error: Unknown Screen '" .. tostring(State.currentScreen) .. "'", 10, 100)
     end
 end
 
