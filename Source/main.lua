@@ -80,6 +80,10 @@ local State = {
     musicSelectionIndex = 1,    -- Cursor position in music menu
     debugEnabled = false,
     debugSelectedUpgrade = 1,
+    -- Secret Menu State
+    secretMenuIndex = 1,
+    infiniteGas = false,
+    fishSizes = { 10, 20, 30, 40 },
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
 }
@@ -106,11 +110,6 @@ local tapeImage = gfx.image.new('images/menu/tape')
 
 -- Load boat sprite (60x60 single image)
 local boatImage = gfx.image.new('images/boat/boat60x60')
-
--- Load fish images
-local fishImages = {
-    gfx.image.new('images/fish/spot20'),
-}
 
 -- Load fonts for UI
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
@@ -180,6 +179,25 @@ local function isSafeWater(x, y, radius)
     return true
 end
 
+-- Helper to check if a new fish would overlap any existing fish
+local function isOverlappingExistingFish(x, y, size)
+    local padding = 4 -- pixels of extra space between circles
+    local r1 = size / 2
+    for i = 1, #State.fish do
+        local other = State.fish[i]
+        if other.alive then
+            local dx = x - other.x
+            local dy = y - other.y
+            local distSq = dx * dx + dy * dy
+            local minDist = r1 + (other.size / 2) + padding
+            if distSq < (minDist * minDist) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 -- Helper to spawn fish in Schools and Lone Scouts
 local function spawnFish()
     local totalFish = 15 -- Set to 15 (base 10 + extra requested)
@@ -210,21 +228,28 @@ local function spawnFish()
         if attempts <= 100 then
             -- Spawn cluster around anchor
             for i = 1, fishPerSchool do
-                local angle = math.random() * 2 * math.pi
-                local dist = math.random(15, 60)
-                local fx = anchorX + math.cos(angle) * dist
-                local fy = anchorY + math.sin(angle) * dist
-                
-                -- Ensure individual fish is at least in water
-                if not isInAnyObstacle(fx, fy) then
-                    local randomFishType = math.random(1, #fishImages)
-                    fishPlaced = fishPlaced + 1
-                    State.fish[fishPlaced] = {
-                        x = fx, y = fy, baseX = fx, baseY = fy,
-                        alive = true, image = fishImages[randomFishType],
-                        movePhase = math.random() * 6.28,
-                        moveType = math.random(1, 3)
-                    }
+                local placedInCluster = false
+                local clusterAttempts = 0
+                while not placedInCluster and clusterAttempts < 20 do
+                    local angle = math.random() * 2 * math.pi
+                    local dist = math.random(15, 80) -- Increased range for better spacing
+                    local fx = anchorX + math.cos(angle) * dist
+                    local fy = anchorY + math.sin(angle) * dist
+                    
+                    local size = State.fishSizes[math.random(1, 4)]
+                    
+                    -- Ensure individual fish is in water and NOT overlapping existing fish
+                    if not isInAnyObstacle(fx, fy) and not isOverlappingExistingFish(fx, fy, size) then
+                        fishPlaced = fishPlaced + 1
+                        State.fish[fishPlaced] = {
+                            x = fx, y = fy, baseX = fx, baseY = fy,
+                            alive = true, size = size,
+                            movePhase = math.random() * 6.28,
+                            moveType = math.random(1, 3)
+                        }
+                        placedInCluster = true
+                    end
+                    clusterAttempts = clusterAttempts + 1
                 end
             end
         end
@@ -234,19 +259,21 @@ local function spawnFish()
     
     -- 2. Spawn Lone Scouts (Fill remaining slots)
     local attempts = 0
-    while fishPlaced < totalFish and attempts < 200 do
+    while fishPlaced < totalFish and attempts < 500 do
         local fx = math.random(minX, maxX)
         local fy = math.random(minY, maxY)
         
         if isSafeWater(fx, fy, 40) then -- slightly smaller buffer for lone scouts
-            local randomFishType = math.random(1, #fishImages)
-            fishPlaced = fishPlaced + 1
-            State.fish[fishPlaced] = {
-                x = fx, y = fy, baseX = fx, baseY = fy,
-                alive = true, image = fishImages[randomFishType],
-                movePhase = math.random() * 6.28,
-                moveType = math.random(1, 3)
-            }
+            local size = math.random(1, 5) == 5 and 40 or 20
+            if not isOverlappingExistingFish(fx, fy, size) then
+                fishPlaced = fishPlaced + 1
+                State.fish[fishPlaced] = {
+                    x = fx, y = fy, baseX = fx, baseY = fy,
+                    alive = true, size = size,
+                    movePhase = math.random() * 6.28,
+                    moveType = math.random(1, 3)
+                }
+            end
         end
         attempts = attempts + 1
     end
@@ -256,18 +283,20 @@ local function spawnFish()
     if fishPlaced == 0 then
         print("Warning: No fish spawned with 50px buffer. Retrying with 15px...")
         local attempts = 0
-        while fishPlaced < totalFish and attempts < 200 do
+        while fishPlaced < totalFish and attempts < 500 do
             local fx = math.random(minX, maxX)
             local fy = math.random(minY, maxY)
             if isSafeWater(fx, fy, 15) then
-                local randomFishType = math.random(1, #fishImages)
-                fishPlaced = fishPlaced + 1
-                State.fish[fishPlaced] = {
-                    x = fx, y = fy, baseX = fx, baseY = fy,
-                    alive = true, image = fishImages[randomFishType],
-                    movePhase = math.random() * 6.28,
-                    moveType = math.random(1, 3)
-                }
+                local size = math.random(1, 5) == 5 and 40 or 20
+                if not isOverlappingExistingFish(fx, fy, size) then
+                    fishPlaced = fishPlaced + 1
+                    State.fish[fishPlaced] = {
+                        x = fx, y = fy, baseX = fx, baseY = fy,
+                        alive = true, size = size,
+                        movePhase = math.random() * 6.28,
+                        moveType = math.random(1, 3)
+                    }
+                end
             end
             attempts = attempts + 1
         end
@@ -624,20 +653,16 @@ local function updateInput()
         State.pausedByDock = true
     end
 
-    -- Record stern position for wake trail
-    local fwd_x = boat.velocity_x
-    local fwd_y = boat.velocity_y
-    local fwd_len = math.sqrt(fwd_x * fwd_x + fwd_y * fwd_y)
-    if fwd_len > 0 then
-        fwd_x = fwd_x / fwd_len
-        fwd_y = fwd_y / fwd_len
-    end
+    -- Record stern position for wake trail (using visual angle for alignment)
+    local angleRad = math.rad(State.boat.angle - 90)
+    local dirX = math.cos(angleRad)
+    local dirY = math.sin(angleRad)
 
-    local sternOffset = Config.Boat.size.l / 2 - 2
-    local sternWx = boat.x - fwd_x * sternOffset
-    local sternWy = boat.y - fwd_y * sternOffset
-    local right_wx =  fwd_y
-    local right_wy = -fwd_x
+    local sternOffset = 18 -- Distance from center to stern in the 60x60 sprite
+    local sternWx = boat.x - dirX * sternOffset
+    local sternWy = boat.y - dirY * sternOffset
+    local right_wx =  dirY
+    local right_wy = -dirX
 
     local wake = State.wake
     local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
@@ -825,11 +850,21 @@ local function drawContent()
         end
     end
 
-    -- Draw fish (stationary images)
+    -- Draw fish (programmatic dithered circles)
     for _, f in ipairs(State.fish) do
-        if f.alive and f.image then
+        if f.alive then
             local fx, fy = project(f.x, f.y)
-            f.image:drawAnchored(fx, fy, 0.5, 0.5)
+            local size = f.size or 20
+            local radius = size / 2
+            
+            -- Draw circle with Bayer 4x4 dithering (0.5 grey)
+            gfx.setColor(gfx.kColorBlack)
+            gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
+            gfx.fillCircleAtPoint(fx, fy, radius)
+
+            -- Draw black outline
+            gfx.setDitherPattern(0) -- Solid black pattern (or just set color)
+            gfx.drawCircleAtPoint(fx, fy, radius)
         end
     end
 
@@ -1137,17 +1172,85 @@ local function drawDebugMenu()
 end
 
 -- ---------------------------------------------------------
+-- Secret Debug Menu
+-- ---------------------------------------------------------
+local function drawSecretMenu()
+    gfx.clear(gfx.kColorWhite)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.setFont(roobert24)
+    gfx.drawText("SECRET SETTINGS", 100, 10)
+    gfx.drawLine(0, 40, 400, 40)
+    gfx.setFont(roobert11)
+
+    local items = {
+        { name = "Value", type = "upgrade", index = 1, max = 24 },
+        { name = "Speed", type = "upgrade", index = 2, max = 12 },
+        { name = "Line",  type = "upgrade", index = 3, max = 12 },
+        { name = "Time",  type = "upgrade", index = 4, max = 24 },
+        { name = "Fish 1", type = "fishSize", index = 1, max = 100 },
+        { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
+        { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
+        { name = "Fish 4", type = "fishSize", index = 4, max = 100 },
+        { name = "Inf Gas", type = "toggle", value = State.infiniteGas },
+    }
+
+    local y = 55
+    local xLabel = 20
+    local xSlider = 120
+    local sliderWidth = 200
+
+    for i, item in ipairs(items) do
+        local isSelected = (i == State.secretMenuIndex)
+        if isSelected then
+            gfx.fillTriangle(xLabel - 15, y + 2, xLabel - 5, y + 7, xLabel - 15, y + 12)
+        end
+
+        gfx.drawText(item.name, xLabel, y)
+
+        if item.type == "upgrade" or item.type == "fishSize" then
+            local val, min, max
+            if item.type == "upgrade" then
+                val = State.upgrades[item.index].level
+                max = item.max
+                min = -max -- Allow negative levels
+            else
+                val = State.fishSizes[item.index]
+                min = 1
+                max = item.max
+            end
+
+            -- Draw slider bar
+            gfx.drawRect(xSlider, y + 6, sliderWidth, 4)
+            -- Draw handle (mapped to [min, max] range)
+            local pct = (val - min) / (max - min)
+            local handleX = xSlider + (pct * sliderWidth)
+            gfx.fillRect(handleX - 5, y, 10, 15)
+            -- Draw value text
+            gfx.drawText(tostring(val), xSlider + sliderWidth + 10, y)
+
+        elseif item.type == "toggle" then
+            local status = State.infiniteGas and "ON" or "OFF"
+            gfx.drawText(status, xSlider, y)
+        end
+
+        y = y + 20
+    end
+
+    -- Footer
+    gfx.drawLine(0, 224, 400, 224)
+    gfx.drawText("D-Pad: Select/Adjust   A: Reset Round   B: Exit", 80, 227)
+end
+
+-- ---------------------------------------------------------
 -- Main Loop
 -- ---------------------------------------------------------
 function playdate.update()
-    -- A + B pressed together = jump to Tier 2
-    if playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB) then
-        State.totalRunsPlayed = 50
-        State.money = 300
-        State.upgrades[1].level = 5
-        State.upgrades[2].level = 3
-        State.upgrades[3].level = 5
-        State.upgrades[4].level = 2
+    -- A + B pressed together = enter Secret Menu
+    if (playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB)) or
+       (playdate.buttonJustPressed(playdate.kButtonB) and playdate.buttonIsPressed(playdate.kButtonA)) then
+        State.currentScreen = "secret_menu"
+        return
     end
 
     -- Menu button shortcuts
@@ -1173,9 +1276,13 @@ function playdate.update()
             updateInput()
             updateFishMovement()
             State.totalFramesPlayed = State.totalFramesPlayed + 1
-            State.roundTime = State.roundTime + 1
-            if State.roundTime >= State.roundDuration then
-                State.isPaused = true
+            
+            -- Infinite Gas logic
+            if not State.infiniteGas then
+                State.roundTime = State.roundTime + 1
+                if State.roundTime >= State.roundDuration then
+                    State.isPaused = true
+                end
             end
         end
 
@@ -1188,6 +1295,44 @@ function playdate.update()
             end
         end
         waterFrameTime = waterFrameTime + 1
+
+    elseif State.currentScreen == "secret_menu" then
+        local numItems = 9
+        if playdate.buttonJustPressed(playdate.kButtonUp) then
+            State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
+        elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+            State.secretMenuIndex = math.min(numItems, State.secretMenuIndex + 1)
+        end
+
+        local idx = State.secretMenuIndex
+        if idx <= 4 then -- Upgrades
+            local uIdx = idx
+            local maxLevel = (uIdx == 2 or uIdx == 3) and 12 or 24
+            local minLevel = -maxLevel
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.upgrades[uIdx].level = math.max(minLevel, State.upgrades[uIdx].level - 1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.upgrades[uIdx].level = math.min(maxLevel, State.upgrades[uIdx].level + 1)
+            end
+        elseif idx >= 5 and idx <= 8 then -- Fish Sizes
+            local sIdx = idx - 4
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.fishSizes[sIdx] = math.max(1, State.fishSizes[sIdx] - 1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.fishSizes[sIdx] = math.min(100, State.fishSizes[sIdx] + 1)
+            end
+        elseif idx == 9 then -- Infinite Gas
+            if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.infiniteGas = not State.infiniteGas
+            end
+        end
+
+        if playdate.buttonJustPressed(playdate.kButtonA) then
+            resetRound()
+            State.currentScreen = "game"
+        elseif playdate.buttonJustPressed(playdate.kButtonB) then
+            State.currentScreen = "game"
+        end
 
     elseif State.currentScreen == "dock" then
         if playdate.buttonJustPressed(playdate.kButtonUp) then
@@ -1288,6 +1433,8 @@ function playdate.update()
         drawMusicScreen()
     elseif State.currentScreen == "debug" then
         drawDebugMenu()
+    elseif State.currentScreen == "secret_menu" then
+        drawSecretMenu()
     else
         -- Fallback: unknown screen
         gfx.clear(gfx.kColorWhite)

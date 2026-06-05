@@ -257,18 +257,40 @@ Replaced the round timer with a **Hold System**:
 - **Cleanup**: Removed the loading of the large `boat.gif`/`shadow.gif` imagetables and the frame-based lookup logic.
 
 ### Fish Sprite Update
-- **Asset**: Replaced all animated fish sprites with a single static image: **`spot20.png`**.
-- **Distribution**: Maintained the schooling and lone scout distribution logic while using the new asset.
+- **Asset**: Transitioned to a "spot-based" visual system using **`spot20.png`** (80%) and **`spot40.png`** (20%) for variety.
+- **Distribution**: Maintained the schooling and lone scout distribution logic while using the new weighted asset pool.
 
 ---
 
-## Phase 14 — Boat 60x60 PNG & Programmatic Rotation (June 5, 2026)
+## Phase 15 — Programmatic Fish Rendering (June 5, 2026)
 
-### Boat Sprite Update
-- **Scaling**: Switched to the **60x60** PNG boat variant (`boat60x60.png`).
-- **Rotation**: Utilizing **programmatic rotation** with `image:drawRotated()` for smooth visual turning, moving away from frame-based imagetables.
-- **Physics**: Maintained 60x60 collision bounds (18/18/12) and stern offset.
-- **Cleanup**: Removed `getSpriteFrame` logic and shadow drawing (shadow PNG not available for this variant).
+### Programmatic Fish
+- **Visuals**: Replaced fish images with **programmatically drawn dithered circles**.
+- **Sizes**: Maintained a variety of sizes: **20x20** (80%) and **40x40** (20%).
+- **Dithering**: Circles are filled with a **Bayer 4x4 dither pattern** (50% grey) and outlined with a solid black line.
+- **Optimization**: Reduced memory footprint by eliminating fish image assets in favor of direct graphics calls.
+
+---
+
+## Phase 16 — Secret Settings Menu & Infinite Gas (June 5, 2026)
+
+### Secret Debug Menu
+- **Activation**: Remapped the **A + B** shortcut to open a new **Secret Settings** menu.
+- **Sliders**: Implemented interactive sliders for:
+    - **Upgrades**: Directly adjust Value, Speed, Line, and Time levels.
+    - **Fish Sizes**: Independently adjust the diameter of the four circle types (Fish 1-4).
+- **Infinite Gas**: Added a toggle to disable the gas consumption logic, allowing for infinite exploration.
+- **Controls**: Use D-Pad (Up/Down) to navigate, D-Pad (Left/Right) to adjust sliders/toggles, A to reset the round with new settings, and B to exit.
+
+---
+
+## Phase 17 — Visual Polish: Fish Spacing & Overlap Prevention (June 5, 2026)
+
+### Spawning Improvements
+- **Overlap Prevention**: Implemented a proximity check during fish spawning to ensure no two circles ever overlap.
+- **Dynamic Spacing**: Fish are placed with a minimum buffer based on their combined radii plus a small padding constant.
+- **Robust Spawning**: Increased spawn attempts (up to 500) to ensure the requested fish density is maintained even with stricter spacing requirements.
+- **Clustering Tuning**: Adjusted school spawn logic to allow for tightly packed but distinct clusters, improving the visual "school" effect without the mess of overlapping sprites.
 
 ---
 
