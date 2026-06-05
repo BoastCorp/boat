@@ -15,8 +15,8 @@ local Config = {
         minTurnSpeed = 1.5,
         driftWeight = 0.15,
         rotationSpeed = 5,
-        size = { w = 80, l = 80 },
-        radius = 40,
+        size = { w = 60, l = 60 },
+        radius = 30,
         capacity = math.huge, -- Unlimited capacity for time-based runs
     },
     Fish = {
@@ -104,15 +104,12 @@ local dockImage = gfx.image.new('images/level/dock-splash')
 local dockObjectImage = gfx.image.new('images/level/dock')
 local tapeImage = gfx.image.new('images/menu/tape')
 
--- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
-local boatSprites = gfx.imagetable.new('images/boat/boat')
-local shadowSprites = gfx.imagetable.new('images/boat/shadow')
+-- Load boat sprite (60x60 single image)
+local boatImage = gfx.image.new('images/boat/boat60x60')
 
 -- Load fish images
 local fishImages = {
-    gfx.image.new('images/fish/clownfish'),
-    gfx.image.new('images/fish/stur'),
-    gfx.image.new('images/fish/anchovy'),
+    gfx.image.new('images/fish/spot20'),
 }
 
 -- Load fonts for UI
@@ -467,10 +464,10 @@ local function updateInput()
     boat.x = boat.x + boat.velocity_x
     boat.y = boat.y + boat.velocity_y
 
-    -- Use actual boat graphic bounds, not full sprite (Boat is 80x80 but boat graphic is ~50x34)
-    local boatFront = 25  -- pixels from center to nose
-    local boatBack = 25   -- pixels from center to stern
-    local boatSide = 17   -- pixels from center to side edge
+    -- Use actual boat graphic bounds (scaled for 60x60)
+    local boatFront = 18  -- pixels from center to nose
+    local boatBack = 18   -- pixels from center to stern
+    local boatSide = 12    -- pixels from center to side edge
     local playArea = Config.PlayArea
 
     -- Check for boundary collision (play area limit)
@@ -636,7 +633,7 @@ local function updateInput()
         fwd_y = fwd_y / fwd_len
     end
 
-    local sternOffset = Config.Boat.size.l / 2 - 20
+    local sternOffset = Config.Boat.size.l / 2 - 2
     local sternWx = boat.x - fwd_x * sternOffset
     local sternWy = boat.y - fwd_y * sternOffset
     local right_wx =  fwd_y
@@ -756,30 +753,10 @@ local function drawOffScreenFishIndicators()
     end
 end
 
-local function getSpriteFrame(angle)
-    -- Normalize angle to 1-360 range and return frame index
-    local normalized = angle % 360
-    if normalized < 0 then
-        normalized = normalized + 360
-    end
-    local frameIndex = math.floor(normalized + 0.5)
-    if frameIndex == 0 then frameIndex = 360 end
-    if frameIndex > 360 then frameIndex = 360 end
-    return frameIndex
-end
-
 local function drawBoat(x, y, angle)
-    -- Draw boat sprite anchored at center
-    local frameIndex = getSpriteFrame(angle)
-
-    -- Draw shadow sprite (offset by 5 pixels)
-    if shadowSprites and shadowSprites[frameIndex] then
-        shadowSprites[frameIndex]:drawAnchored(x + 5, y + 5, 0.5, 0.5)
-    end
-
-    -- Draw boat sprite anchored at center
-    if boatSprites and boatSprites[frameIndex] then
-        boatSprites[frameIndex]:drawAnchored(x, y, 0.5, 0.5)
+    -- Draw boat sprite (rotated programmatically)
+    if boatImage then
+        boatImage:drawRotated(x, y, angle)
     end
 end
 

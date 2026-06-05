@@ -248,6 +248,30 @@ Replaced the round timer with a **Hold System**:
 
 ---
 
+## Phase 12 — Sprite Scaling & Programmatic Rotation (June 5, 2026)
+
+### Boat Sprite Update
+- **Scaling**: Switched the boat from the large 90x90 (80x80 in code) sprite to a more compact **40x40** version (`boat40x40.png`).
+- **Rotation**: Utilizing **programmatic rotation** with `image:drawRotated()` for smooth visual turning.
+- **Physics Adjustment**: Scaled down collision bounds (`boatFront`, `boatBack`, `boatSide`) and the wake's `sternOffset` to match the new physical footprint of the smaller boat.
+- **Cleanup**: Removed the loading of the large `boat.gif`/`shadow.gif` imagetables and the frame-based lookup logic.
+
+### Fish Sprite Update
+- **Asset**: Replaced all animated fish sprites with a single static image: **`spot20.png`**.
+- **Distribution**: Maintained the schooling and lone scout distribution logic while using the new asset.
+
+---
+
+## Phase 14 — Boat 60x60 PNG & Programmatic Rotation (June 5, 2026)
+
+### Boat Sprite Update
+- **Scaling**: Switched to the **60x60** PNG boat variant (`boat60x60.png`).
+- **Rotation**: Utilizing **programmatic rotation** with `image:drawRotated()` for smooth visual turning, moving away from frame-based imagetables.
+- **Physics**: Maintained 60x60 collision bounds (18/18/12) and stern offset.
+- **Cleanup**: Removed `getSpriteFrame` logic and shadow drawing (shadow PNG not available for this variant).
+
+---
+
 ## Current Game Config (June 5, 2026)
 
 ```lua
@@ -256,7 +280,7 @@ Config.Boat = {
     minTurnSpeed = 1.5,
     driftWeight = 0.15,
     rotationSpeed = 5,
-    size = { w = 80, l = 80 }
+    size = { w = 60, l = 60 }
 }
 Config.Fish = {
     count = 15, -- (10 Schools + 5 Lone Scouts)
@@ -271,7 +295,7 @@ Config.WakeMaxLength = 110
 ## Files Modified
 - **Source/main.lua** — Core game logic, physics, and rendering.
 - **Source/images/level/** — `2-top.png`, `2-collision.png` (New map assets).
-- **Source/images/boat/** — `boat.gif` (Updated to boat_6).
+- **Source/images/boat/** — `boat60.gif`, `boat40x40.png` (New sprite assets).
 - **PROGRESS.md** — Project history and status tracking.
 
 ---
