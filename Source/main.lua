@@ -104,18 +104,6 @@ local dockImage = gfx.image.new('images/level/dock-splash')
 local dockObjectImage = gfx.image.new('images/level/dock')
 local tapeImage = gfx.image.new('images/menu/tape')
 
--- Music
-local menuMusic = playdate.sound.fileplayer.new('sound/music/boxset - wedelivery')
-local menuFilter = playdate.sound.twopolefilter.new(playdate.sound.kFilterLowPass)
-local menuChannel = playdate.sound.channel.new()
-menuFilter:setFrequency(20000)
-menuChannel:addEffect(menuFilter)
-
-if menuMusic then
-    menuMusic:setVolume(0.5)
-    menuChannel:addSource(menuMusic)
-end
-
 -- Load boat sprite (360-degree directional sprite sheet from Rowbot Rally)
 local boatSprites = gfx.imagetable.new('images/boat/boat')
 local shadowSprites = gfx.imagetable.new('images/boat/shadow')
@@ -1175,28 +1163,6 @@ end
 -- Main Loop
 -- ---------------------------------------------------------
 function playdate.update()
-    -- Music management: Play on dock/upgrade/music screens, stop otherwise
-    if State.currentScreen == "dock" or State.currentScreen == "upgrade" or State.currentScreen == "music" then
-        if menuMusic and not menuMusic:isPlaying() then
-            menuMusic:play(0)
-        end
-
-        -- Muffle and volume effect: Clear/Loud on dock, muffled/quieter on sub-menus
-        if menuFilter then
-            if State.currentScreen == "dock" then
-                menuFilter:setFrequency(20000)
-                if menuMusic then menuMusic:setVolume(0.5) end
-            else
-                menuFilter:setFrequency(800)
-                if menuMusic then menuMusic:setVolume(0.375) end -- 25% lower than 0.5
-            end
-        end
-    else
-        if menuMusic and menuMusic:isPlaying() then
-            menuMusic:stop()
-        end
-    end
-
     -- A + B pressed together = jump to Tier 2
     if playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB) then
         State.totalRunsPlayed = 50

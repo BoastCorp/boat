@@ -239,7 +239,16 @@ Replaced the round timer with a **Hold System**:
 
 ---
 
-## Current Game Config (June 2, 2026)
+## Phase 11 — Audio Streamlining (June 5, 2026)
+
+### Removal of Menu Audio
+- **Music**: Removed the background music (`boxset - wedelivery.mp3`) from the Dock and sub-menus to provide a quieter, focused experience.
+- **Audio Effects**: Deleted the `twopolefilter` muffled effect previously applied to sub-menus (Upgrade/Music screens).
+- **Cleanup**: Removed all associated audio initialization, channel management, and per-frame filter logic from `main.lua` to optimize performance and code clarity.
+
+---
+
+## Current Game Config (June 5, 2026)
 
 ```lua
 Config.Boat = {
