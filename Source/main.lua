@@ -15,8 +15,8 @@ local Config = {
         minTurnSpeed = 1.5,
         driftWeight = 0.15,
         rotationSpeed = 5,
-        size = { w = 60, l = 60 },
-        radius = 30,
+        size = { w = 40, l = 40 },
+        radius = 20,
         capacity = math.huge, -- Unlimited capacity for time-based runs
     },
     Fish = {
@@ -108,8 +108,8 @@ local dockImage = gfx.image.new('images/level/dock-splash')
 local dockObjectImage = gfx.image.new('images/level/dock')
 local tapeImage = gfx.image.new('images/menu/tape')
 
--- Load boat sprite (60x60 single image)
-local boatImage = gfx.image.new('images/boat/boat60x60')
+-- Load boat sprite (40x40 single image)
+local boatImage = gfx.image.new('images/boat/boat40x40')
 
 -- Load fonts for UI
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
@@ -160,19 +160,27 @@ local function isInAnyObstacle(x, y)
     return false
 end
 
--- Check if a coordinate is "Safe Water" (distance away from land)
+-- Check if a coordinate is "Safe Water" (distance away from land and world edges)
 local function isSafeWater(x, y, radius)
-    -- Check center
+    local playArea = Config.PlayArea
+    local r = radius or 0
+    
+    -- Check world boundaries
+    if x < r or x > playArea.width - r or y < r or y > playArea.height - r then
+        return false
+    end
+
+    -- Check center for land
     if isInAnyObstacle(x, y) then return false end
     
     -- If no radius check needed, we're done
-    if not radius or radius <= 0 then return true end
+    if r <= 0 then return true end
     
-    -- Check 8 points around the circle to ensure clearance
+    -- Check 8 points around the circle to ensure clearance from land
     for a = 0, 7 do
         local angle = a * (math.pi / 4)
-        local sx = x + math.cos(angle) * radius
-        local sy = y + math.sin(angle) * radius
+        local sx = x + math.cos(angle) * r
+        local sy = y + math.sin(angle) * r
         if isInAnyObstacle(sx, sy) then return false end
     end
     
@@ -216,7 +224,7 @@ local function spawnFish()
     local fishPerSchool = 3
     
     for s = 1, numSchools do
-        -- Find a safe Anchor Point (50px buffer from land)
+        -- Find a safe Anchor Point (50px buffer from land/barriers)
         local anchorX, anchorY
         local attempts = 0
         repeat
@@ -238,8 +246,8 @@ local function spawnFish()
                     
                     local size = State.fishSizes[math.random(1, 4)]
                     
-                    -- Ensure individual fish is in water and NOT overlapping existing fish
-                    if not isInAnyObstacle(fx, fy) and not isOverlappingExistingFish(fx, fy, size) then
+                    -- Ensure individual fish has 50px clearance from barriers and NOT overlapping existing fish
+                    if isSafeWater(fx, fy, 50) and not isOverlappingExistingFish(fx, fy, size) then
                         fishPlaced = fishPlaced + 1
                         State.fish[fishPlaced] = {
                             x = fx, y = fy, baseX = fx, baseY = fy,
@@ -263,7 +271,8 @@ local function spawnFish()
         local fx = math.random(minX, maxX)
         local fy = math.random(minY, maxY)
         
-        if isSafeWater(fx, fy, 40) then -- slightly smaller buffer for lone scouts
+        -- Use 50px buffer as requested for all targets
+        if isSafeWater(fx, fy, 50) then 
             local size = math.random(1, 5) == 5 and 40 or 20
             if not isOverlappingExistingFish(fx, fy, size) then
                 fishPlaced = fishPlaced + 1
@@ -279,14 +288,14 @@ local function spawnFish()
     end
     print("Total fish spawned: " .. fishPlaced)
     
-    -- Fallback: If we couldn't place any fish, try again with smaller radius
-    if fishPlaced == 0 then
-        print("Warning: No fish spawned with 50px buffer. Retrying with 15px...")
+    -- Fallback: If we couldn't place enough fish, try again with smaller radius
+    if fishPlaced < totalFish then
+        print("Warning: Could only spawn " .. fishPlaced .. " fish with 50px buffer. Retrying for remainder with 30px...")
         local attempts = 0
         while fishPlaced < totalFish and attempts < 500 do
             local fx = math.random(minX, maxX)
             local fy = math.random(minY, maxY)
-            if isSafeWater(fx, fy, 15) then
+            if isSafeWater(fx, fy, 30) then
                 local size = math.random(1, 5) == 5 and 40 or 20
                 if not isOverlappingExistingFish(fx, fy, size) then
                     fishPlaced = fishPlaced + 1
@@ -493,10 +502,10 @@ local function updateInput()
     boat.x = boat.x + boat.velocity_x
     boat.y = boat.y + boat.velocity_y
 
-    -- Use actual boat graphic bounds (scaled for 60x60)
-    local boatFront = 18  -- pixels from center to nose
-    local boatBack = 18   -- pixels from center to stern
-    local boatSide = 12    -- pixels from center to side edge
+    -- Use actual boat graphic bounds (scaled for 40x40)
+    local boatFront = 12  -- pixels from center to nose
+    local boatBack = 12   -- pixels from center to stern
+    local boatSide = 8    -- pixels from center to side edge
     local playArea = Config.PlayArea
 
     -- Check for boundary collision (play area limit)
@@ -658,7 +667,7 @@ local function updateInput()
     local dirX = math.cos(angleRad)
     local dirY = math.sin(angleRad)
 
-    local sternOffset = 18 -- Distance from center to stern in the 60x60 sprite
+    local sternOffset = 12 -- Distance from center to stern in the 40x40 sprite
     local sternWx = boat.x - dirX * sternOffset
     local sternWy = boat.y - dirY * sternOffset
     local right_wx =  dirY
