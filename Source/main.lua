@@ -82,7 +82,7 @@ local State = {
     debugSelectedUpgrade = 1,
     -- Secret Menu State
     secretMenuIndex = 1,
-    infiniteGas = false,
+    infiniteGas = true,
     fishSizes = { 10, 20, 30, 40 },
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
@@ -105,7 +105,7 @@ local waterFrameTime   = 0
 local levelTopImage = gfx.image.new('images/level/2-top')
 local levelCollisionImage = gfx.image.new('images/level/2-collision')
 local dockImage = gfx.image.new('images/level/dock-splash')
-local dockObjectImage = gfx.image.new('images/level/dock')
+local dockObjectImage = gfx.image.new('images/fish/littleguy')
 local tapeImage = gfx.image.new('images/menu/tape')
 
 -- Load boat sprite (40x40 single image)
@@ -778,13 +778,39 @@ local function updateInput()
                 for j = 1, i do
                     poly[j] = wake[j]
                 end
-                -- Catch fish inside the polygon
+                -- Catch fish inside the polygon (80% coverage check)
                 local caught = 0
                 for _, f in ipairs(State.fish) do
-                    if f.alive and pointInPolygon(f.x, f.y, poly) then
-                        f.alive = false
-                        State.money = State.money + 1 + State.upgrades[1].level
-                        caught = caught + 1
+                    if f.alive then
+                        local size = f.size or 20
+                        local w = (size * 1.5) / 2
+                        local h = (size * 0.7) / 2
+                        local rad = math.rad(f.angle or 0)
+                        local cosA = math.cos(rad)
+                        local sinA = math.sin(rad)
+                        
+                        -- Define 5 points to check (Center, Head, Tail, Left, Right)
+                        local points = {
+                            {f.x, f.y},                                -- Center
+                            {f.x + cosA * w, f.y + sinA * w},          -- Head
+                            {f.x - cosA * w, f.y - sinA * w},          -- Tail
+                            {f.x - sinA * h, f.y + cosA * h},          -- Left Side
+                            {f.x + sinA * h, f.y - cosA * h}           -- Right Side
+                        }
+                        
+                        local pointsInside = 0
+                        for p = 1, 5 do
+                            if pointInPolygon(points[p][1], points[p][2], poly) then
+                                pointsInside = pointsInside + 1
+                            end
+                        end
+                        
+                        -- Require 80% (4 out of 5) points inside to catch
+                        if pointsInside >= 4 then
+                            f.alive = false
+                            State.money = State.money + 1 + State.upgrades[1].level
+                            caught = caught + 1
+                        end
                     end
                 end
 
