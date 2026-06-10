@@ -84,6 +84,20 @@ local State = {
     secretMenuIndex = 1,
     infiniteGas = true,
     fishSizes = { 10, 20, 30, 40 },
+    -- Wave Settings
+    waveScale = 0.5,
+    waveAnimSpeed = 3,
+    waveCount = 80,
+    -- Fish & Visuals
+    fishCount = 15,
+    fishSpeedMult = 1.0,
+    highContrast = true,
+    showFishMarkers = true,
+    -- Smoke Settings
+    smokeParticles = {},
+    lastSmokeFrame = 0,
+    smokeScale = 1.0,
+    smokeFreq = 75, -- Frames between puffs (1.5s)
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
 }
@@ -110,6 +124,12 @@ local tapeImage = gfx.image.new('images/menu/tape')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
+local smokeTable = gfx.imagetable.new('images/boat/smoke')
+local smokeFrameCount = smokeTable and smokeTable:getLength() or 0
+
+if not smokeTable or smokeFrameCount == 0 then
+    print("CRITICAL: Smoke Table FAILED to load!")
+end
 
 -- Load fonts for UI
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
@@ -125,7 +145,7 @@ local function preRenderFishImages()
         local img = gfx.image.new(w, h, gfx.kColorClear)
         
         gfx.pushContext(img)
-            gfx.setColor(gfx.kColorBlack)
+            gfx.setColor(gfx.kColorWhite)
             gfx.fillEllipseInRect(2, 2, w-4, h-4)
         gfx.popContext()
         
@@ -233,9 +253,61 @@ local function isOverlappingExistingFish(x, y, size)
     return false
 end
 
+-- Wave initialization logic
+local waveTableRaw = gfx.imagetable.new('images/water/wave', 15, 24)
+local waveFrameCount = waveTableRaw and waveTableRaw:getLength() or 0
+local waveTableScaled = {}
+local waveInstances = {}
+
+local function preScaleWaves()
+    if not waveTableRaw then return end
+    waveTableScaled = {} -- Reset cache
+    for i = 1, waveFrameCount do
+        local img = waveTableRaw:getImage(i)
+        local w, h = img:getSize()
+        local sw, sh = math.floor(w * State.waveScale), math.floor(h * State.waveScale)
+        if sw < 1 then sw = 1 end
+        if sh < 1 then sh = 1 end
+        local scaledImg = gfx.image.new(sw, sh)
+        gfx.pushContext(scaledImg)
+            img:drawScaled(0, 0, State.waveScale)
+        gfx.popContext()
+        waveTableScaled[i] = scaledImg
+    end
+end
+
+preScaleWaves()
+
+local function initWaves()
+    waveInstances = {}
+    local playArea = Config.PlayArea
+    -- Scatter wave sprites based on secret menu count
+    for i = 1, State.waveCount do
+        local wx = math.random(0, playArea.width)
+        local wy = math.random(0, playArea.height)
+        
+        -- Only place waves in water (not on land)
+        if not isInAnyObstacle(wx, wy) then
+            table.insert(waveInstances, {
+                x = wx,
+                y = wy,
+                frameOffset = math.random(1, waveFrameCount),
+                speed = math.random(2, 4) -- Base divisor for variety
+            })
+        end
+    end
+end
+
+initWaves()
+
+-- Procedural Wave Update logic
+local function updateWaves()
+    -- No state to update per-frame, handled in draw
+end
+
 -- Helper to spawn fish in Schools and Lone Scouts
 local function spawnFish()
-    local totalFish = 15 -- Set to 15 (base 10 + extra requested)
+    local totalFish = State.fishCount
     State.fish = {}
     
     -- Playable area is 1000x1000 (visual 1400x1400)
@@ -414,13 +486,14 @@ local function resetRound()
     State.boat.boostFrames = 0
     State.totalRunsPlayed = State.totalRunsPlayed + 1
     spawnFish()
+    initWaves()
 end
 
 -- Update fish positions based on movement phase
 local function updateFishMovement()
     -- Gentle movement: movement speed starts slow and increases with runs
-    local difficultyMult = 1.0 + (State.totalRunsPlayed * 0.05)
-    difficultyMult = math.min(difficultyMult, 2.5) -- Cap difficulty
+    local difficultyMult = (1.0 + (State.totalRunsPlayed * 0.05)) * State.fishSpeedMult
+    difficultyMult = math.min(difficultyMult, 5.0) -- Cap difficulty
 
     for _, fish in ipairs(State.fish) do
         if fish.alive then
@@ -833,7 +906,7 @@ end
 local function drawOffScreenFishIndicators()
     -- Draw triangles pointing to off-screen fish
     local margin = 15
-    gfx.setColor(gfx.kColorBlack)
+    gfx.setColor(gfx.kColorWhite)
 
     for _, f in ipairs(State.fish) do
         if f.alive then
@@ -876,179 +949,182 @@ local function drawBoat(x, y, angle)
 end
 
 local function drawContent()
-    -- Water layers (matches Rowbot Rally order)
     local bx, by = State.boat.x, State.boat.y
-    local frame = (math.floor(waterFrameTime / 11.72) % waterFrameCount) + 1
+    local time = State.totalFramesPlayed
 
-    -- 1. Static base
-    if waterBg then waterBg:draw(0, 0) end
+    if State.highContrast then
+        gfx.clear(gfx.kColorBlack)
+    else
+        -- 1. Static base
+        if waterBg then waterBg:draw(0, 0) end
 
-    -- 2. Animated caustics (slow pan, opposite to boat direction)
-    if causticsTable then
-        local img = causticsTable:getImage(frame)
-        if img then
-            local px = ((-math.floor(bx / 4) * 2) % 400) - 400
-            local py = ((-math.floor(by / 4) * 2) % 240) - 240
-            img:draw(px, py)
-        end
-    end
-
-    -- 3. Caustics overlay (static, camera-locked)
-    if causticsOverlay then causticsOverlay:draw(0, 0) end
-
-    -- 4. Animated water (faster pan, opposite to boat direction)
-    if waterTable then
-        local img = waterTable:getImage(frame)
-        if img then
-            local px = ((-bx * 0.8) % 400) - 400
-            local py = ((-by * 0.8) % 240) - 240
-            img:draw(px, py)
-        end
-    end
-
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setLineWidth(2)
-
-    -- Draw level terrain visual
-    if levelTopImage then
-        local lx, ly = project(0, 0)
-        levelTopImage:draw(lx, ly)
-    end
-
-    -- Draw play area boundary
-    local playArea = Config.PlayArea
-    local x1, y1 = project(0, 0)
-    local x2, y2 = project(playArea.width, 0)
-    local x3, y3 = project(playArea.width, playArea.height)
-    local x4, y4 = project(0, playArea.height)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setLineWidth(3)
-    gfx.drawLine(x1, y1, x2, y2)
-    gfx.drawLine(x2, y2, x3, y3)
-    gfx.drawLine(x3, y3, x4, y4)
-    gfx.drawLine(x4, y4, x1, y1)
-    gfx.setLineWidth(2)
-
-    -- Draw wake as simple lines (fast, no polygon building)
-    local wake = State.wake
-    local wakeLen = #wake
-    if wakeLen >= 2 then
-        for i = 1, wakeLen - 1 do
-            local x1, y1 = project(wake[i].wx, wake[i].wy)
-            local x2, y2 = project(wake[i + 1].wx, wake[i + 1].wy)
-            gfx.drawLine(x1, y1, x2, y2)
-        end
-    end
-
-    -- Draw fish (programmatic dithered circles)
-    for _, f in ipairs(State.fish) do
-        if f.alive then
-            local fx, fy = project(f.x, f.y)
-            local size = f.size or 20
-            local angle = f.angle or 0
-            local img = fishImageCache[size]
-            
+        -- 2. Animated caustics
+        local frame = (math.floor(waterFrameTime / 11.72) % waterFrameCount) + 1
+        if causticsTable then
+            local img = causticsTable:getImage(frame)
             if img then
-                img:drawRotated(fx, fy, angle)
+                local px = ((-math.floor(bx / 4) * 2) % 400) - 400
+                local py = ((-math.floor(by / 4) * 2) % 240) - 240
+                img:draw(px, py)
+            end
+        end
+
+        -- 3. Caustics overlay
+        if causticsOverlay then causticsOverlay:draw(0, 0) end
+
+        -- 4. Animated water
+        if waterTable then
+            local img = waterTable:getImage(frame)
+            if img then
+                local px = ((-bx * 0.8) % 400) - 400
+                local py = ((-by * 0.8) % 240) - 240
+                img:draw(px, py)
             end
         end
     end
 
-    -- Draw dock object in the world
-    if dockObjectImage then
-        local dx, dy = project(Config.Dock.x, Config.Dock.y)
-        dockObjectImage:drawAnchored(dx, dy, 0.5, 0.5)
+    -- Set draw mode based on contrast
+    local mainDrawMode = State.highContrast and gfx.kDrawModeInverted or gfx.kDrawModeCopy
+    local uiColor = State.highContrast and gfx.kColorWhite or gfx.kColorBlack
+
+    -- Draw level terrain visual
+    if levelTopImage then
+        local lx, ly = project(0, 0)
+        local sx = math.max(0, -lx)
+        local sy = math.max(0, -ly)
+        local sw = math.min(400, 1400 - sx)
+        local sh = math.min(240, 1400 - sy)
+        local tx = math.max(0, lx)
+        local ty = math.max(0, ly)
+        
+        gfx.setImageDrawMode(mainDrawMode)
+        levelTopImage:draw(tx, ty, gfx.kImageUnflipped, sx, sy, sw, sh)
     end
 
-    -- Draw boat (includes shadow with dithering) at screen center
-    local boat_screen_x, boat_screen_y = project(State.boat.x, State.boat.y)
-    drawBoat(boat_screen_x, boat_screen_y, State.boat.angle)
+    -- Draw play area boundary
+    local x1, y1 = project(0, 0)
+    local x2, y2 = project(Config.PlayArea.width, Config.PlayArea.height)
+    gfx.setColor(uiColor)
+    gfx.setLineWidth(3)
+    gfx.drawRect(x1, y1, x2 - x1, y2 - y1)
+    gfx.setLineWidth(2)
 
-    -- Debug: Draw hitbox
-    if State.debugEnabled and State.boat.corners then
-        gfx.setColor(gfx.kColorBlack)
-        gfx.setLineWidth(1)
-        local c = State.boat.corners
-        local p1x, p1y = project(c[1][1], c[1][2])
-        local p2x, p2y = project(c[2][1], c[2][2])
-        local p3x, p3y = project(c[4][1], c[4][2]) -- Note: 1-2-4-3 order for box loop
-        local p4x, p4y = project(c[3][1], c[3][2])
-        gfx.drawLine(p1x, p1y, p2x, p2y)
-        gfx.drawLine(p2x, p2y, p3x, p3y)
-        gfx.drawLine(p3x, p3y, p4x, p4y)
-        gfx.drawLine(p4x, p4y, p1x, p1y)
+    -- Draw Wave Sprite Sheet Animations
+    if waveTableScaled and waveFrameCount > 0 then
+        gfx.setImageDrawMode(mainDrawMode)
+        local animSpeed = State.waveAnimSpeed / 3
+        for _, w in ipairs(waveInstances) do
+            local dx = w.x - bx
+            local dy = w.y - by
+            if dx > -230 and dx < 230 and dy > -150 and dy < 150 then
+                local wx, wy = 200 + dx, 120 + dy
+                local speedDiv = w.speed * animSpeed
+                local frame = ((math.floor(time / speedDiv) + w.frameOffset) % waveFrameCount) + 1
+                local img = waveTableScaled[frame]
+                if img then
+                    local iw, ih = img:getSize()
+                    img:draw(wx - iw/2, wy - ih/2)
+                end
+            end
+        end
+    end
+
+    -- Draw wake
+    local wake = State.wake
+    if #wake >= 2 then
+        gfx.setColor(uiColor)
+        for i = 1, #wake - 1 do
+            local p1 = wake[i]
+            local p2 = wake[i + 1]
+            gfx.drawLine(200 + (p1.wx - bx), 120 + (p1.wy - by), 200 + (p2.wx - bx), 120 + (p2.wy - by))
+        end
+    end
+
+    -- Draw fish
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    for _, f in ipairs(State.fish) do
+        if f.alive then
+            local dx, dy = f.x - bx, f.y - by
+            if dx > -220 and dx < 220 and dy > -140 and dy < 140 then
+                local fx, fy = 200 + dx, 120 + dy
+                local img = fishImageCache[f.size]
+                if img then
+                    -- If NOT high contrast, fish should be black
+                    if not State.highContrast then
+                        gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
+                    end
+                    img:drawRotated(fx, fy, f.angle or 0)
+                    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+                end
+            end
+        end
+    end
+
+    -- Draw dock object and boat
+    gfx.setImageDrawMode(mainDrawMode)
+    if dockObjectImage then
+        local dx, dy = 200 + (Config.Dock.x - bx), 120 + (Config.Dock.y - by)
+        if dx > -50 and dx < 450 and dy > -50 and dy < 290 then
+            dockObjectImage:drawAnchored(dx, dy, 0.5, 0.5)
+        end
+    end
+
+    if boatImage then
+        boatImage:drawRotated(200, 120, State.boat.angle)
     end
 
     -- Draw indicators pointing to off-screen fish
-    drawOffScreenFishIndicators()
-
-    -- Money display
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawText("$" .. State.money, 4, 4)
-
-    -- Gas Meter (replaces numerical timer)
-    local gasWidth = 100
-    local gasHeight = 12
-    local gasX = 400 - gasWidth - 10
-    local gasY = 10
-    
-    local fillPercent = math.max(0, (State.roundDuration - State.roundTime) / State.roundDuration)
-    local fillWidth = math.floor(gasWidth * fillPercent)
-    
-    -- Draw meter background/border
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillRect(gasX, gasY, gasWidth, gasHeight)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawRect(gasX, gasY, gasWidth, gasHeight)
-    
-    -- Draw fill
-    if fillWidth > 0 then
-        gfx.fillRect(gasX, gasY, fillWidth, gasHeight)
+    if State.showFishMarkers then
+        drawOffScreenFishIndicators()
     end
 
-    -- Pause message (displayed over the game)
-    if State.isPaused then
-        gfx.setColor(gfx.kColorWhite)
-        gfx.fillRect(60, 70, 280, 100)
-        gfx.setColor(gfx.kColorBlack)
-        gfx.drawRect(60, 70, 280, 100)
-
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        gfx.setFont(roobert24)
-        if State.pausedByDock then
-            gfx.drawText("DOCK!", 175, 80)
-        else
-            gfx.drawText("OUT OF GAS!", 135, 80)
+    -- Draw Smoke Particles (TOP LAYER, FORCED VISIBLE)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    for _, s in ipairs(State.smokeParticles) do
+        local sx, sy = 200 + (s.x - bx), 120 + (s.y - by)
+        
+        if smokeTable then
+            local img = smokeTable:getImage(s.frame)
+            if img then
+                -- Correct drawAnchored: x, y, ax, ay, sx, sy
+                img:drawAnchored(sx, sy, 0.5, 0.5, State.smokeScale, State.smokeScale)
+            end
         end
+    end
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Money display
+    if State.highContrast then
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    else
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        gfx.setColor(gfx.kColorBlack)
+    end
+    gfx.drawText("$" .. State.money, 4, 4)
+
+    -- Gas Meter
+    local gasWidth, gasHeight = 100, 12
+    local gasX, gasY = 290, 10
+    local fillPercent = math.max(0, (State.roundDuration - State.roundTime) / State.roundDuration)
+    
+    gfx.setColor(uiColor)
+    gfx.drawRect(gasX, gasY, gasWidth, gasHeight)
+    gfx.fillRect(gasX, gasY, math.floor(gasWidth * fillPercent), gasHeight)
+
+    -- Pause message
+    if State.isPaused then
+        gfx.setColor(State.highContrast and gfx.kColorBlack or gfx.kColorWhite)
+        gfx.fillRect(60, 70, 280, 100)
+        gfx.setColor(uiColor)
+        gfx.drawRect(60, 70, 280, 100)
+        
+        if State.highContrast then gfx.setImageDrawMode(gfx.kDrawModeFillWhite) else gfx.setImageDrawMode(gfx.kDrawModeCopy) end
+        gfx.setFont(roobert24)
+        gfx.drawText(State.pausedByDock and "DOCK!" or "OUT OF GAS!", 135, 80)
         gfx.setFont(roobert11)
         gfx.drawText("Go back to dock?", 150, 115)
         gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
         gfx.setFont(nil)
-    end
-
-    -- Small debug panel (top-right, tiny font, toggle with Menu button)
-    if State.debugEnabled then
-        local v  = State.upgrades[1].level
-        local sp = State.upgrades[2].level
-        local l  = State.upgrades[3].level
-        local c  = State.upgrades[4].level
-        local income = calculateRunIncome()
-        local nextV  = calculateUpgradeCost(1, v + 1)
-        local nextSp = calculateUpgradeCost(2, sp + 1)
-
-        -- White background box
-        gfx.setColor(gfx.kColorWhite)
-        gfx.fillRect(220, 44, 178, 42)
-        gfx.setColor(gfx.kColorBlack)
-        gfx.drawRect(220, 44, 178, 42)
-
-        gfx.setFont(nil)
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        gfx.drawText("V:"..v.." Sp:"..sp.." L:"..l.." C:"..c, 224, 46)
-        gfx.drawText("Est. Income: $"..income.."/run", 224, 56)
-        gfx.drawText("Next V=$"..nextV.." Sp=$"..nextSp, 224, 66)
-        gfx.drawText("Runs:"..State.totalRunsPlayed.."  $"..State.money, 224, 76)
     end
 end
 
@@ -1278,54 +1354,110 @@ local function drawSecretMenu()
         { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
         { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
         { name = "Fish 4", type = "fishSize", index = 4, max = 100 },
-        { name = "Inf Gas", type = "toggle", value = State.infiniteGas },
+        { name = "Inf Gas", type = "toggle", key = "infiniteGas" },
+        { name = "W-Size",  type = "waveScale", value = State.waveScale },
+        { name = "W-Anim",  type = "waveAnim", value = State.waveAnimSpeed },
+        { name = "W-Count", type = "waveCount", value = State.waveCount },
+        { name = "F-Count", type = "fishCount", value = State.fishCount },
+        { name = "F-Speed", type = "fishSpeed", value = State.fishSpeedMult },
+        { name = "Markers", type = "toggle", key = "showFishMarkers" },
+        { name = "Contrast", type = "toggle", key = "highContrast" },
+        { name = "S-Size",  type = "smokeScale", value = State.smokeScale },
+        { name = "S-Freq",  type = "smokeFreq", value = State.smokeFreq },
     }
 
-    local y = 55
+    -- Scrolling logic: show max 8 items at a time
+    local scrollIdx = 0
+    if State.secretMenuIndex > 8 then
+        scrollIdx = State.secretMenuIndex - 8
+    end
+
+    local startY = 55
+    local spacing = 22
     local xLabel = 20
     local xSlider = 120
     local sliderWidth = 200
 
+    -- Set clipping rect to keep items below the header
+    gfx.setClipRect(0, 42, 400, 198)
+
     for i, item in ipairs(items) do
+        local y = startY + (i - 1 - scrollIdx) * spacing
         local isSelected = (i == State.secretMenuIndex)
+        
         if isSelected then
             gfx.fillTriangle(xLabel - 15, y + 2, xLabel - 5, y + 7, xLabel - 15, y + 12)
         end
 
         gfx.drawText(item.name, xLabel, y)
 
-        if item.type == "upgrade" or item.type == "fishSize" then
+        if item.type == "upgrade" or item.type == "fishSize" or item.type == "waveScale" or item.type == "waveAnim" or item.type == "waveCount" or item.type == "fishCount" or item.type == "fishSpeed" or item.type == "smokeScale" or item.type == "smokeFreq" then
             local val, min, max
             if item.type == "upgrade" then
                 val = State.upgrades[item.index].level
                 max = item.max
-                min = -max -- Allow negative levels
-            else
+                min = -max
+            elseif item.type == "fishSize" then
                 val = State.fishSizes[item.index]
                 min = 1
                 max = item.max
+            elseif item.type == "waveScale" then
+                val = math.floor(State.waveScale * 100)
+                min = 10
+                max = 200
+            elseif item.type == "waveAnim" then
+                val = State.waveAnimSpeed
+                min = 1
+                max = 10
+            elseif item.type == "waveCount" then
+                val = State.waveCount
+                min = 0
+                max = 300
+            elseif item.type == "fishCount" then
+                val = State.fishCount
+                min = 1
+                max = 50
+            elseif item.type == "fishSpeed" then
+                val = math.floor(State.fishSpeedMult * 10)
+                min = 1
+                max = 50
+            elseif item.type == "smokeScale" then
+                val = math.floor(State.smokeScale * 100)
+                min = 10
+                max = 300
+            elseif item.type == "smokeFreq" then
+                val = State.smokeFreq
+                min = 5
+                max = 250
             end
 
             -- Draw slider bar
             gfx.drawRect(xSlider, y + 6, sliderWidth, 4)
-            -- Draw handle (mapped to [min, max] range)
+            -- Draw handle
             local pct = (val - min) / (max - min)
             local handleX = xSlider + (pct * sliderWidth)
             gfx.fillRect(handleX - 5, y, 10, 15)
             -- Draw value text
-            gfx.drawText(tostring(val), xSlider + sliderWidth + 10, y)
+            local displayVal = tostring(val)
+            if item.type == "waveScale" or item.type == "smokeScale" then displayVal = val .. "%"
+            elseif item.type == "fishSpeed" then displayVal = (val/10) .. "x" end
+            gfx.drawText(displayVal, xSlider + sliderWidth + 10, y)
 
         elseif item.type == "toggle" then
-            local status = State.infiniteGas and "ON" or "OFF"
+            local status = State[item.key] and "ON" or "OFF"
             gfx.drawText(status, xSlider, y)
         end
-
-        y = y + 20
     end
 
-    -- Footer
-    gfx.drawLine(0, 224, 400, 224)
-    gfx.drawText("D-Pad: Select/Adjust   A: Reset Round   B: Exit", 80, 227)
+    gfx.clearClipRect()
+
+    -- Draw scroll indicators
+    if scrollIdx > 0 then
+        gfx.fillTriangle(380, 45, 390, 45, 385, 38)
+    end
+    if scrollIdx < #items - 8 then
+        gfx.fillTriangle(380, 230, 390, 230, 385, 237)
+    end
 end
 
 -- ---------------------------------------------------------
@@ -1361,7 +1493,33 @@ function playdate.update()
         if not State.isPaused then
             updateInput()
             updateFishMovement()
-            State.totalFramesPlayed = State.totalFramesPlayed + 1
+            updateWaves()
+            
+            local time = State.totalFramesPlayed
+            State.totalFramesPlayed = time + 1
+            
+            -- Spawn Smoke based on secret menu frequency
+            if time - State.lastSmokeFrame >= State.smokeFreq then
+                table.insert(State.smokeParticles, {
+                    x = State.boat.x,
+                    y = State.boat.y,
+                    frame = 1
+                })
+                State.lastSmokeFrame = time
+            end
+
+            -- Update Smoke Particle Animations
+            for i = #State.smokeParticles, 1, -1 do
+                local s = State.smokeParticles[i]
+                -- Advance frame every 3 game frames for a ~5fps animation look, 
+                -- or just every frame for smooth 50fps. Let's do every 3 frames.
+                if time % 3 == 0 then
+                    s.frame = s.frame + 1
+                    if s.frame > smokeFrameCount then
+                        table.remove(State.smokeParticles, i)
+                    end
+                end
+            end
             
             -- Infinite Gas logic
             if not State.infiniteGas then
@@ -1383,7 +1541,7 @@ function playdate.update()
         waterFrameTime = waterFrameTime + 1
 
     elseif State.currentScreen == "secret_menu" then
-        local numItems = 9
+        local numItems = 18
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -1410,6 +1568,62 @@ function playdate.update()
         elseif idx == 9 then -- Infinite Gas
             if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.infiniteGas = not State.infiniteGas
+            end
+        elseif idx == 10 then -- Wave Size
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.waveScale = math.max(0.1, State.waveScale - 0.1)
+                preScaleWaves()
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.waveScale = math.min(2.0, State.waveScale + 0.1)
+                preScaleWaves()
+            end
+        elseif idx == 11 then -- Wave Animation Speed
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.waveAnimSpeed = math.min(10, State.waveAnimSpeed + 1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.waveAnimSpeed = math.max(1, State.waveAnimSpeed - 1)
+            end
+        elseif idx == 12 then -- Wave Count
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.waveCount = math.max(0, State.waveCount - 10)
+                initWaves()
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.waveCount = math.min(300, State.waveCount + 10)
+                initWaves()
+            end
+        elseif idx == 13 then -- Fish Count
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.fishCount = math.max(1, State.fishCount - 1)
+                spawnFish()
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.fishCount = math.min(50, State.fishCount + 1)
+                spawnFish()
+            end
+        elseif idx == 14 then -- Fish Speed
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.fishSpeedMult = math.max(0.1, State.fishSpeedMult - 0.1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.fishSpeedMult = math.min(5.0, State.fishSpeedMult + 0.1)
+            end
+        elseif idx == 15 then -- Markers
+            if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.showFishMarkers = not State.showFishMarkers
+            end
+        elseif idx == 16 then -- Contrast
+            if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.highContrast = not State.highContrast
+            end
+        elseif idx == 17 then -- Smoke Size
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.smokeScale = math.max(0.1, State.smokeScale - 0.1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.smokeScale = math.min(3.0, State.smokeScale + 0.1)
+            end
+        elseif idx == 18 then -- Smoke Frequency
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.smokeFreq = math.min(250, State.smokeFreq + 5)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.smokeFreq = math.max(5, State.smokeFreq - 5)
             end
         end
 
@@ -1509,7 +1723,7 @@ function playdate.update()
     -- 2. Drawing
     -- ---------------------------------------------------------
     if State.currentScreen == "game" then
-        gfx.clear()
+        gfx.clear(gfx.kColorBlack)
         drawContent()
     elseif State.currentScreen == "dock" then
         drawDockScreen()
