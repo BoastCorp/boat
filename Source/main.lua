@@ -189,16 +189,23 @@ end
 
 -- Helper to check if a new fish would overlap any existing fish
 local function isOverlappingExistingFish(x, y, size)
-    local padding = 4 -- pixels of extra space between circles
-    local r1 = size / 2
+    local padding = 10 -- pixels of extra space between edges as requested
+    local w1 = size * 1.5
+    local h1 = size * 0.7
+    
     for i = 1, #State.fish do
         local other = State.fish[i]
         if other.alive then
-            local dx = x - other.x
-            local dy = y - other.y
-            local distSq = dx * dx + dy * dy
-            local minDist = r1 + (other.size / 2) + padding
-            if distSq < (minDist * minDist) then
+            local w2 = other.size * 1.5
+            local h2 = other.size * 0.7
+            
+            -- Efficient AABB overlap check with padding
+            local dx = math.abs(x - other.x)
+            local dy = math.abs(y - other.y)
+            local min_dist_x = (w1 + w2) / 2 + padding
+            local min_dist_y = (h1 + h2) / 2 + padding
+            
+            if dx < min_dist_x and dy < min_dist_y then
                 return true
             end
         end
@@ -864,16 +871,17 @@ local function drawContent()
         if f.alive then
             local fx, fy = project(f.x, f.y)
             local size = f.size or 20
-            local radius = size / 2
+            local w = size * 1.5
+            local h = size * 0.7
             
-            -- Draw circle with Bayer 4x4 dithering (0.5 grey)
+            -- Draw oblong (ellipse) with Bayer 4x4 dithering (0.5 grey)
             gfx.setColor(gfx.kColorBlack)
             gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
-            gfx.fillCircleAtPoint(fx, fy, radius)
+            gfx.fillEllipseInRect(fx - w/2, fy - h/2, w, h)
 
             -- Draw black outline
             gfx.setDitherPattern(0) -- Solid black pattern (or just set color)
-            gfx.drawCircleAtPoint(fx, fy, radius)
+            gfx.drawEllipseInRect(fx - w/2, fy - h/2, w, h)
         end
     end
 
