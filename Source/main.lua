@@ -115,6 +115,26 @@ local boatImage = gfx.image.new('images/boat/boat40x40')
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 local roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 
+-- Cache for fish images
+local fishImageCache = {}
+
+local function preRenderFishImages()
+    for _, size in ipairs(State.fishSizes) do
+        local w = math.ceil(size * 1.5) + 4
+        local h = math.ceil(size * 0.7) + 4
+        local img = gfx.image.new(w, h, gfx.kColorClear)
+        
+        gfx.pushContext(img)
+            gfx.setColor(gfx.kColorBlack)
+            gfx.fillEllipseInRect(2, 2, w-4, h-4)
+        gfx.popContext()
+        
+        fishImageCache[size] = img
+    end
+end
+
+preRenderFishImages()
+
 -- ---------------------------------------------------------
 -- Utilities
 -- ---------------------------------------------------------
@@ -398,46 +418,74 @@ end
 
 -- Update fish positions based on movement phase
 local function updateFishMovement()
-    -- Fish start moving at run 50
-    if State.totalRunsPlayed < 50 then
-        return
-    end
-
     -- Gentle movement: movement speed starts slow and increases with runs
-    local runsPast50 = math.max(0, State.totalRunsPlayed - 50)
-    local movementSpeed = 0.03 + (runsPast50 * 0.002)
-    movementSpeed = math.min(movementSpeed, 0.15)
+    local difficultyMult = 1.0 + (State.totalRunsPlayed * 0.05)
+    difficultyMult = math.min(difficultyMult, 2.5) -- Cap difficulty
 
     for _, fish in ipairs(State.fish) do
         if fish.alive then
-            -- Initialize movement fields if they don't exist
-            if not fish.movePhase then
-                fish.movePhase = math.random() * 6.28
-                fish.moveType = math.random(1, 3)
-                fish.baseX = fish.x
-                fish.baseY = fish.y
+            -- Initialize state machine if not present
+            if not fish.state then
+                fish.state = "drift"
+                fish.timer = math.random(50, 150)
+                fish.angle = math.random() * 360
+                fish.targetAngle = fish.angle
+                fish.speed = 0.2
             end
 
-            fish.movePhase = fish.movePhase + movementSpeed
+            -- Update timer
+            fish.timer = fish.timer - 1
 
-            if fish.moveType == 1 then
+            if fish.state == "drift" then
                 -- Slow gentle drift
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
-                fish.y = fish.baseY + math.cos(fish.movePhase) * 8
-            elseif fish.moveType == 2 then
-                -- Figure-8
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 6
-                fish.y = fish.baseY + math.sin(fish.movePhase * 2) * 6
-            else
-                -- Random drift
-                fish.x = fish.baseX + math.sin(fish.movePhase) * 8
-                fish.y = fish.baseY + math.cos(fish.movePhase * 1.5) * 8
+                fish.speed = 0.2 * difficultyMult
+                -- Slow angle adjustment towards target
+                local diff = (fish.targetAngle - fish.angle + 180) % 360 - 180
+                fish.angle = fish.angle + diff * 0.05
+                
+                if fish.timer <= 0 then
+                    fish.state = "dart"
+                    fish.timer = math.random(10, 30)
+                    -- Pick a dart angle that roughly points back to base if too far
+                    local dx = fish.baseX - fish.x
+                    local dy = fish.baseY - fish.y
+                    local dist = math.sqrt(dx*dx + dy*dy)
+                    if dist > 60 then
+                        fish.targetAngle = math.deg(math.atan2(dy, dx))
+                    else
+                        fish.targetAngle = fish.angle + math.random(-45, 45)
+                    end
+                end
+            elseif fish.state == "dart" then
+                -- Quick burst
+                fish.speed = 1.5 * difficultyMult
+                -- Faster angle adjustment
+                local diff = (fish.targetAngle - fish.angle + 180) % 360 - 180
+                fish.angle = fish.angle + diff * 0.2
+                
+                if fish.timer <= 0 then
+                    fish.state = "drift"
+                    fish.timer = math.random(50, 150)
+                end
             end
 
-            -- Push fish out if they entered an obstacle
-            if isInAnyObstacle(fish.x, fish.y) then
-                fish.x = fish.baseX
-                fish.y = fish.baseY
+            -- Move fish
+            local rad = math.rad(fish.angle)
+            local vx = math.cos(rad) * fish.speed
+            local vy = math.sin(rad) * fish.speed
+            
+            local nx = fish.x + vx
+            local ny = fish.y + vy
+
+            -- Collision/Boundary check
+            if isInAnyObstacle(nx, ny) or nx < 0 or nx > Config.PlayArea.width or ny < 0 or ny > Config.PlayArea.height then
+                -- Bounce off or stop
+                fish.targetAngle = fish.angle + 180
+                fish.state = "drift"
+                fish.timer = 50
+            else
+                fish.x = nx
+                fish.y = ny
             end
         end
     end
@@ -871,17 +919,12 @@ local function drawContent()
         if f.alive then
             local fx, fy = project(f.x, f.y)
             local size = f.size or 20
-            local w = size * 1.5
-            local h = size * 0.7
+            local angle = f.angle or 0
+            local img = fishImageCache[size]
             
-            -- Draw oblong (ellipse) with Bayer 4x4 dithering (0.5 grey)
-            gfx.setColor(gfx.kColorBlack)
-            gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer4x4)
-            gfx.fillEllipseInRect(fx - w/2, fy - h/2, w, h)
-
-            -- Draw black outline
-            gfx.setDitherPattern(0) -- Solid black pattern (or just set color)
-            gfx.drawEllipseInRect(fx - w/2, fy - h/2, w, h)
+            if img then
+                img:drawRotated(fx, fy, angle)
+            end
         end
     end
 
