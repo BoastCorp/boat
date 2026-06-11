@@ -17,7 +17,6 @@ local Config = {
         rotationSpeed = 5,
         size = { w = 40, l = 40 },
         radius = 20,
-        capacity = math.huge, -- Unlimited capacity for time-based runs
     },
     Fish = {
         count = 5,
@@ -64,8 +63,6 @@ local State = {
     fish = {},
     money = 0,
     hold = 0,
-    roundDuration = 1200, -- 50 FPS * 24 seconds = 1200 frames
-    roundTime = 0,
     isPaused = false,
     pausedByDock = false,
     currentScreen = "game",  -- "game" or "upgrade"
@@ -73,7 +70,6 @@ local State = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
         { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
-        { name = "Time",     level = 0 },  -- [4] Round time: +3 seconds per level
     },
     selectedUpgrade = 1,
     selectedMusic = 1,          -- Currently active track
@@ -82,7 +78,6 @@ local State = {
     debugSelectedUpgrade = 1,
     -- Secret Menu State
     secretMenuIndex = 1,
-    infiniteGas = true,
     fishSizes = { 10, 20, 30, 40 },
     -- Wave Settings
     waveScale = 0.3,
@@ -92,12 +87,6 @@ local State = {
     fishCount = 15,
     fishSpeedMult = 1.0,
     showFishMarkers = true,
-    -- Smoke Settings
-    smokeEnabled = false,
-    smokeParticles = {},
-    lastSmokeFrame = 0,
-    smokeScale = 1.0,
-    smokeFreq = 75, -- Frames between puffs (1.5s)
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
 }
@@ -116,12 +105,6 @@ local tapeImage = gfx.image.new('images/menu/tape')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
-local smokeTable = gfx.imagetable.new('images/boat/smoke')
-local smokeFrameCount = smokeTable and smokeTable:getLength() or 0
-
-if not smokeTable or smokeFrameCount == 0 then
-    print("CRITICAL: Smoke Table FAILED to load!")
-end
 
 -- Load fonts for UI
 local roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
@@ -409,8 +392,8 @@ spawnFish()
 -- ---------------------------------------------------------
 -- Progression Formulas
 -- ---------------------------------------------------------
-local UPGRADE_BASE_PRICES = { 5, 5, 2, 12 }
--- Value=$5, Speed=$5, Line=$2, Capacity=$12
+local UPGRADE_BASE_PRICES = { 5, 5, 2 }
+-- Value=$5, Speed=$5, Line=$2
 
 local function calculateUpgradeCost(upgradeIndex, level)
     local basePrice = UPGRADE_BASE_PRICES[upgradeIndex]
@@ -426,17 +409,13 @@ end
 
 local function calculateRunIncome()
     -- Estimated income per full hold
-    local duration = 24 + (State.upgrades[4].level * 3)
-    local fishPerSec = 0.5 -- hypothetical average
     local fishValue = 1 + State.upgrades[1].level
-    return math.floor(duration * fishPerSec * fishValue)
+    return math.floor(50 * fishValue) -- Simplified placeholder
 end
 
 -- Helper to fully reset boat + round
 local function resetRound()
     State.hold = 0
-    State.roundTime = 0
-    State.roundDuration = (24 + State.upgrades[4].level * 3) * 50
     State.isPaused = false
     State.pausedByDock = false
     
@@ -1036,33 +1015,9 @@ local function drawContent()
         drawOffScreenFishIndicators()
     end
 
-    -- Draw Smoke Particles (TOP LAYER, FORCED VISIBLE)
-    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-    for _, s in ipairs(State.smokeParticles) do
-        local sx, sy = 200 + (s.x - bx), 120 + (s.y - by)
-        
-        if smokeTable then
-            local img = smokeTable:getImage(s.frame)
-            if img then
-                -- Correct drawAnchored: x, y, ax, ay, sx, sy
-                img:drawAnchored(sx, sy, 0.5, 0.5, State.smokeScale, State.smokeScale)
-            end
-        end
-    end
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-
     -- Money display
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.drawText("$" .. State.money, 4, 4)
-
-    -- Gas Meter
-    local gasWidth, gasHeight = 100, 12
-    local gasX, gasY = 290, 10
-    local fillPercent = math.max(0, (State.roundDuration - State.roundTime) / State.roundDuration)
-    
-    gfx.setColor(uiColor)
-    gfx.drawRect(gasX, gasY, gasWidth, gasHeight)
-    gfx.fillRect(gasX, gasY, math.floor(gasWidth * fillPercent), gasHeight)
 
     -- Pause message
     if State.isPaused then
@@ -1073,7 +1028,7 @@ local function drawContent()
         
         gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         gfx.setFont(roobert24)
-        gfx.drawText(State.pausedByDock and "DOCK!" or "OUT OF GAS!", 135, 80)
+        gfx.drawText("DOCK!", 135, 80)
         gfx.setFont(roobert11)
         gfx.drawText("Go back to dock?", 150, 115)
         gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
@@ -1265,18 +1220,11 @@ local function drawDebugMenu()
     -- Income breakdown
     gfx.drawText("INCOME BREAKDOWN:", 8, y)
     y = y + 12
-    local maxCapacity = Config.Boat.capacity + (State.upgrades[4].level * 3)
     local fishValue = 1 + State.upgrades[1].level
-    gfx.drawText(string.format("Capacity: %d items", maxCapacity), 8, y)
-    y = y + 10
     gfx.drawText(string.format("Fish Value: $%d each", fishValue), 8, y)
     y = y + 10
     gfx.drawLine(0, y + 1, 200, y + 1)
     y = y + 4
-    gfx.drawText("EST. TOTAL/RUN: $" .. (maxCapacity * fishValue), 8, y)
-    y = y + 12
-
-    -- Stats
     gfx.drawText("Runs: " .. State.totalRunsPlayed .. "   Money: $" .. State.money, 8, y)
     y = y + 12
 
@@ -1302,21 +1250,16 @@ local function drawSecretMenu()
         { name = "Value", type = "upgrade", index = 1, max = 24 },
         { name = "Speed", type = "upgrade", index = 2, max = 12 },
         { name = "Line",  type = "upgrade", index = 3, max = 12 },
-        { name = "Time",  type = "upgrade", index = 4, max = 24 },
         { name = "Fish 1", type = "fishSize", index = 1, max = 100 },
         { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
         { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
         { name = "Fish 4", type = "fishSize", index = 4, max = 100 },
-        { name = "Inf Gas", type = "toggle", key = "infiniteGas" },
-        { name = "Smoke", type = "toggle", key = "smokeEnabled" },
         { name = "W-Size",  type = "waveScale", value = State.waveScale },
         { name = "W-Anim",  type = "waveAnim", value = State.waveAnimSpeed },
         { name = "W-Count", type = "waveCount", value = State.waveCount },
         { name = "F-Count", type = "fishCount", value = State.fishCount },
         { name = "F-Speed", type = "fishSpeed", value = State.fishSpeedMult },
         { name = "Markers", type = "toggle", key = "showFishMarkers" },
-        { name = "S-Size",  type = "smokeScale", value = State.smokeScale },
-        { name = "S-Freq",  type = "smokeFreq", value = State.smokeFreq },
     }
 
     -- Scrolling logic: show max 8 items at a time
@@ -1450,37 +1393,6 @@ function playdate.update()
             
             local time = State.totalFramesPlayed
             State.totalFramesPlayed = time + 1
-            
-            -- Spawn Smoke based on secret menu frequency
-            if State.smokeEnabled and time - State.lastSmokeFrame >= State.smokeFreq then
-                table.insert(State.smokeParticles, {
-                    x = State.boat.x,
-                    y = State.boat.y,
-                    frame = 1
-                })
-                State.lastSmokeFrame = time
-            end
-
-            -- Update Smoke Particle Animations
-            for i = #State.smokeParticles, 1, -1 do
-                local s = State.smokeParticles[i]
-                -- Advance frame every 3 game frames for a ~5fps animation look, 
-                -- or just every frame for smooth 50fps. Let's do every 3 frames.
-                if time % 3 == 0 then
-                    s.frame = s.frame + 1
-                    if s.frame > smokeFrameCount then
-                        table.remove(State.smokeParticles, i)
-                    end
-                end
-            end
-            
-            -- Infinite Gas logic
-            if not State.infiniteGas then
-                State.roundTime = State.roundTime + 1
-                if State.roundTime >= State.roundDuration then
-                    State.isPaused = true
-                end
-            end
         end
 
         if State.isPaused then
@@ -1493,7 +1405,7 @@ function playdate.update()
         end
 
     elseif State.currentScreen == "secret_menu" then
-        local numItems = 18
+        local numItems = 13
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -1501,7 +1413,7 @@ function playdate.update()
         end
 
         local idx = State.secretMenuIndex
-        if idx <= 4 then -- Upgrades
+        if idx <= 3 then -- Upgrades
             local uIdx = idx
             local maxLevel = (uIdx == 2 or uIdx == 3) and 12 or 24
             local minLevel = -maxLevel
@@ -1510,22 +1422,14 @@ function playdate.update()
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.upgrades[uIdx].level = math.min(maxLevel, State.upgrades[uIdx].level + 1)
             end
-        elseif idx >= 5 and idx <= 8 then -- Fish Sizes
-            local sIdx = idx - 4
+        elseif idx >= 4 and idx <= 7 then -- Fish Sizes
+            local sIdx = idx - 3
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishSizes[sIdx] = math.max(1, State.fishSizes[sIdx] - 1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.fishSizes[sIdx] = math.min(100, State.fishSizes[sIdx] + 1)
             end
-        elseif idx == 9 then -- Infinite Gas
-            if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
-                State.infiniteGas = not State.infiniteGas
-            end
-        elseif idx == 10 then -- Smoke Toggle
-            if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
-                State.smokeEnabled = not State.smokeEnabled
-            end
-        elseif idx == 11 then -- Wave Size
+        elseif idx == 8 then -- Wave Size
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveScale = math.max(0.1, State.waveScale - 0.1)
                 preScaleWaves()
@@ -1533,13 +1437,13 @@ function playdate.update()
                 State.waveScale = math.min(2.0, State.waveScale + 0.1)
                 preScaleWaves()
             end
-        elseif idx == 12 then -- Wave Animation Speed
+        elseif idx == 9 then -- Wave Animation Speed
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveAnimSpeed = math.min(10, State.waveAnimSpeed + 1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.waveAnimSpeed = math.max(1, State.waveAnimSpeed - 1)
             end
-        elseif idx == 13 then -- Wave Count
+        elseif idx == 10 then -- Wave Count
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveCount = math.max(0, State.waveCount - 10)
                 initWaves()
@@ -1547,7 +1451,7 @@ function playdate.update()
                 State.waveCount = math.min(300, State.waveCount + 10)
                 initWaves()
             end
-        elseif idx == 14 then -- Fish Count
+        elseif idx == 11 then -- Fish Count
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishCount = math.max(1, State.fishCount - 1)
                 spawnFish()
@@ -1555,27 +1459,15 @@ function playdate.update()
                 State.fishCount = math.min(50, State.fishCount + 1)
                 spawnFish()
             end
-        elseif idx == 15 then -- Fish Speed
+        elseif idx == 12 then -- Fish Speed
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishSpeedMult = math.max(0.1, State.fishSpeedMult - 0.1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.fishSpeedMult = math.min(5.0, State.fishSpeedMult + 0.1)
             end
-        elseif idx == 16 then -- Markers
+        elseif idx == 13 then -- Markers
             if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.showFishMarkers = not State.showFishMarkers
-            end
-        elseif idx == 17 then -- Smoke Size
-            if playdate.buttonJustPressed(playdate.kButtonLeft) then
-                State.smokeScale = math.max(0.1, State.smokeScale - 0.1)
-            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-                State.smokeScale = math.min(3.0, State.smokeScale + 0.1)
-            end
-        elseif idx == 18 then -- Smoke Frequency
-            if playdate.buttonJustPressed(playdate.kButtonLeft) then
-                State.smokeFreq = math.min(250, State.smokeFreq + 5)
-            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-                State.smokeFreq = math.max(5, State.smokeFreq - 5)
             end
         end
 
