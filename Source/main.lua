@@ -32,11 +32,6 @@ local Config = {
         height = 1400,
     },
     Obstacles = {},
-    Dock = {
-        x = 849,
-        y = 1148,
-        radius = 50, -- Collision radius for the dock
-    },
     WakeMaxLength = 190,
     RefreshRate = 50,
 }
@@ -57,6 +52,16 @@ local State = {
         bounceFrames = 0, -- New: duration of bounce override
         boostSpeed = 0,   -- Arcade boost
         boostFrames = 0,
+    },
+    littleguy = {
+        x = 0,
+        y = 0,
+        angle = 0,
+        targetAngle = 0,
+        speed = 0.3,
+        timer = 0,
+        state = "drift",
+        radius = 25, -- Collision radius
     },
     wake = {},
     wakePool = {}, -- Pre-allocated/recycled tables for wake points
@@ -291,7 +296,6 @@ local function spawnFish()
     local minY, maxY = 200, 1200
     
     local fishPlaced = 0
-    print("Spawning fish schools...")
     
     -- 1. Spawn Schools (Clusters)
     local numSchools = 3
@@ -337,8 +341,6 @@ local function spawnFish()
         end
     end
     
-    print("Spawning lone scouts... Fish so far: " .. fishPlaced)
-    
     -- 2. Spawn Lone Scouts (Fill remaining slots)
     local attempts = 0
     while fishPlaced < totalFish and attempts < 500 do
@@ -360,11 +362,9 @@ local function spawnFish()
         end
         attempts = attempts + 1
     end
-    print("Total fish spawned: " .. fishPlaced)
     
     -- Fallback: If we couldn't place enough fish, try again with smaller radius
     if fishPlaced < totalFish then
-        print("Warning: Could only spawn " .. fishPlaced .. " fish with 50px buffer. Retrying for remainder with 30px...")
         local attempts = 0
         while fishPlaced < totalFish and attempts < 500 do
             local fx = math.random(minX, maxX)
@@ -386,8 +386,70 @@ local function spawnFish()
     end
 end
 
+-- Helper to initialize littleguy in a safe water spot
+local function initLittleGuy()
+    local attempts = 0
+    local minX, maxX = 200, 1200
+    local minY, maxY = 200, 1200
+    repeat
+        State.littleguy.x = math.random(minX, maxX)
+        State.littleguy.y = math.random(minY, maxY)
+        attempts = attempts + 1
+    until isSafeWater(State.littleguy.x, State.littleguy.y, 50) or attempts > 100
+    
+    State.littleguy.angle = math.random() * 360
+    State.littleguy.targetAngle = State.littleguy.angle
+    State.littleguy.timer = math.random(50, 150)
+    State.littleguy.state = "drift"
+end
+
+-- Update littleguy movement (floating like a fish)
+local function updateLittleGuyMovement()
+    local lg = State.littleguy
+    lg.timer = lg.timer - 1
+
+    if lg.state == "drift" then
+        lg.speed = 0.4
+        local diff = (lg.targetAngle - lg.angle + 180) % 360 - 180
+        lg.angle = lg.angle + diff * 0.05
+        
+        if lg.timer <= 0 then
+            lg.state = "dart"
+            lg.timer = math.random(20, 40)
+            lg.targetAngle = lg.angle + math.random(-60, 60)
+        end
+    elseif lg.state == "dart" then
+        lg.speed = 1.2
+        local diff = (lg.targetAngle - lg.angle + 180) % 360 - 180
+        lg.angle = lg.angle + diff * 0.1
+        
+        if lg.timer <= 0 then
+            lg.state = "drift"
+            lg.timer = math.random(60, 200)
+        end
+    end
+
+    local rad = math.rad(lg.angle)
+    local vx = math.cos(rad) * lg.speed
+    local vy = math.sin(rad) * lg.speed
+    
+    local nx = lg.x + vx
+    local ny = lg.y + vy
+
+    -- Boundary check for littleguy
+    if isInAnyObstacle(nx, ny) or nx < 100 or nx > 1300 or ny < 100 or ny > 1300 then
+        lg.targetAngle = lg.angle + 180
+        lg.state = "drift"
+        lg.timer = 50
+    else
+        lg.x = nx
+        lg.y = ny
+    end
+end
+
 -- Call initial spawn
 spawnFish()
+initLittleGuy()
 
 -- ---------------------------------------------------------
 -- Progression Formulas
@@ -458,6 +520,7 @@ local function resetRound()
     State.totalRunsPlayed = State.totalRunsPlayed + 1
     spawnFish()
     initWaves()
+    initLittleGuy()
 end
 
 -- Update fish positions based on movement phase
@@ -751,12 +814,12 @@ local function updateInput()
         end
     end
 
-    -- Check for dock collision (trigger dock prompt)
-    local dx = boat.x - Config.Dock.x
-    local dy = boat.y - Config.Dock.y
+    -- Check for littleguy collision (trigger dock prompt)
+    local dx = boat.x - State.littleguy.x
+    local dy = boat.y - State.littleguy.y
     local distSq = dx * dx + dy * dy
-    local dockRadius = Config.Dock.radius
-    if distSq < (dockRadius * dockRadius) then
+    local lgRadius = State.littleguy.radius
+    if distSq < (lgRadius * lgRadius) then
         State.isPaused = true
         State.pausedByDock = true
     end
@@ -1000,7 +1063,7 @@ local function drawContent()
     -- Draw dock object and boat
     gfx.setImageDrawMode(mainDrawMode)
     if dockObjectImage then
-        local dx, dy = 200 + (Config.Dock.x - bx), 120 + (Config.Dock.y - by)
+        local dx, dy = 200 + (State.littleguy.x - bx), 120 + (State.littleguy.y - by)
         if dx > -50 and dx < 450 and dy > -50 and dy < 290 then
             dockObjectImage:drawAnchored(dx, dy, 0.5, 0.5)
         end
@@ -1040,7 +1103,8 @@ end
 -- Dock Screen
 -- ---------------------------------------------------------
 local function drawDockScreen()
-    gfx.clear(gfx.kColorWhite)
+    gfx.clear(gfx.kColorBlack)
+    gfx.setImageDrawMode(gfx.kDrawModeInverted)
     if dockImage then
         dockImage:draw(0, 0)
     else
@@ -1389,6 +1453,7 @@ function playdate.update()
         if not State.isPaused then
             updateInput()
             updateFishMovement()
+            updateLittleGuyMovement()
             updateWaves()
             
             local time = State.totalFramesPlayed
@@ -1493,14 +1558,15 @@ function playdate.update()
             State.currentScreen = "dock"
         else
             local sel = State.selectedUpgrade
+            local numUpgrades = #State.upgrades
             if playdate.buttonJustPressed(playdate.kButtonUp) then
                 if sel > 2 then State.selectedUpgrade = sel - 2 end
             elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-                if sel <= 2 then State.selectedUpgrade = sel + 2 end
+                if sel + 2 <= numUpgrades then State.selectedUpgrade = sel + 2 end
             elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
                 if sel % 2 == 0 then State.selectedUpgrade = sel - 1 end
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-                if sel % 2 == 1 then State.selectedUpgrade = sel + 1 end
+                if sel % 2 == 1 and sel + 1 <= numUpgrades then State.selectedUpgrade = sel + 1 end
             end
 
             sel = State.selectedUpgrade
@@ -1585,4 +1651,3 @@ function playdate.update()
         gfx.drawText("Error: Unknown Screen '" .. tostring(State.currentScreen) .. "'", 10, 100)
     end
 end
-
