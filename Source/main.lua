@@ -992,6 +992,26 @@ local function drawContent()
     local mainDrawMode = gfx.kDrawModeInverted
     local uiColor = gfx.kColorWhite
 
+    -- Draw Wave Sprite Sheet Animations
+    if waveTableScaled and waveFrameCount > 0 then
+        gfx.setImageDrawMode(mainDrawMode)
+        local animSpeed = State.waveAnimSpeed / 3
+        for _, w in ipairs(waveInstances) do
+            local dx = w.x - bx
+            local dy = w.y - by
+            if dx > -230 and dx < 230 and dy > -150 and dy < 150 then
+                local wx, wy = 200 + dx, 120 + dy
+                local speedDiv = w.speed * animSpeed
+                local frame = ((math.floor(time / speedDiv) + w.frameOffset) % waveFrameCount) + 1
+                local img = waveTableScaled[frame]
+                if img then
+                    local iw, ih = img:getSize()
+                    img:draw(wx - iw/2, wy - ih/2)
+                end
+            end
+        end
+    end
+
     -- Draw level terrain visual
     if levelTopImage then
         local lx, ly = project(0, 0)
@@ -1013,26 +1033,6 @@ local function drawContent()
     gfx.setLineWidth(3)
     gfx.drawRect(x1, y1, x2 - x1, y2 - y1)
     gfx.setLineWidth(2)
-
-    -- Draw Wave Sprite Sheet Animations
-    if waveTableScaled and waveFrameCount > 0 then
-        gfx.setImageDrawMode(mainDrawMode)
-        local animSpeed = State.waveAnimSpeed / 3
-        for _, w in ipairs(waveInstances) do
-            local dx = w.x - bx
-            local dy = w.y - by
-            if dx > -230 and dx < 230 and dy > -150 and dy < 150 then
-                local wx, wy = 200 + dx, 120 + dy
-                local speedDiv = w.speed * animSpeed
-                local frame = ((math.floor(time / speedDiv) + w.frameOffset) % waveFrameCount) + 1
-                local img = waveTableScaled[frame]
-                if img then
-                    local iw, ih = img:getSize()
-                    img:draw(wx - iw/2, wy - ih/2)
-                end
-            end
-        end
-    end
 
     -- Draw wake
     local wake = State.wake
