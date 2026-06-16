@@ -76,6 +76,7 @@ local State = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
         { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
+        { name = "Boost",    level = 0 },  -- [4] Boost cooldown: -0.5s per level
     },
     selectedUpgrade = 1,
     selectedMusic = 1,          -- Currently active track
@@ -456,8 +457,8 @@ initLittleGuy()
 -- ---------------------------------------------------------
 -- Progression Formulas
 -- ---------------------------------------------------------
-local UPGRADE_BASE_PRICES = { 5, 5, 2 }
--- Value=$5, Speed=$5, Line=$2
+local UPGRADE_BASE_PRICES = { 5, 5, 2, 18 }
+-- Value=$5, Speed=$5, Line=$2, Boost=$18
 
 local function calculateUpgradeCost(upgradeIndex, level)
     local basePrice = UPGRADE_BASE_PRICES[upgradeIndex]
@@ -475,6 +476,11 @@ local function calculateRunIncome()
     -- Estimated income per full hold
     local fishValue = 1 + State.upgrades[1].level
     return math.floor(50 * fishValue) -- Simplified placeholder
+end
+
+-- Helper to get actual boost cooldown after upgrade
+local function getActualBoostCooldown()
+    return math.max(0, State.boostCooldownDuration - (State.upgrades[4].level * 0.5))
 end
 
 -- Helper to fully reset boat + round
@@ -616,7 +622,7 @@ local function updateInput()
     if playdate.buttonJustPressed(playdate.kButtonUp) and boat.boostFrames <= 0 and boat.boostCooldownFrames <= 0 then
         boat.boostSpeed = 11.0 -- Initial arcade burst speed
         boat.boostFrames = 60   -- Duration of boost decay (1.2s at 50fps)
-        boat.boostCooldownFrames = math.floor(State.boostCooldownDuration * Config.RefreshRate)
+        boat.boostCooldownFrames = math.floor(getActualBoostCooldown() * Config.RefreshRate)
         -- Snap moveAngle to visual angle for immediate lunge in nose direction
         boat.moveAngle = boat.angle
     end
@@ -993,7 +999,8 @@ end
 
 local function drawBoostIndicator()
     local boat = State.boat
-    local cooldownMax = math.floor(State.boostCooldownDuration * Config.RefreshRate)
+    local actualCooldown = getActualBoostCooldown()
+    local cooldownMax = math.floor(actualCooldown * Config.RefreshRate)
     
     -- Always draw the background circle as a "recharging" UI element
     local margin = 20
@@ -1003,7 +1010,7 @@ local function drawBoostIndicator()
     
     gfx.setLineWidth(2)
     
-    if boat.boostCooldownFrames > 0 then
+    if boat.boostCooldownFrames > 0 and cooldownMax > 0 then
         -- Draw empty-ish circle with progress fill
         gfx.setColor(gfx.kColorWhite)
         gfx.drawCircleAtPoint(x, y, radius)
@@ -1206,7 +1213,7 @@ local function drawUpgradeScreen()
 
         -- Level
         gfx.setFont(roobert11)
-        local maxLevel = (i == 2 or i == 3) and 12 or 24
+        local maxLevel = (i == 2 or i == 3) and 12 or (i == 4 and 6 or 24)
         gfx.drawText("Level " .. upgrade.level .. " / " .. maxLevel, x + 10, y + 45)
 
         -- Cost
@@ -1304,7 +1311,7 @@ local function drawDebugMenu()
     for i = 1, #State.upgrades do
         local upgrade = State.upgrades[i]
         local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-        local maxLevel = (i == 2 or i == 3) and 12 or 24
+        local maxLevel = (i == 2 or i == 3) and 12 or (i == 4 and 6 or 24)
 
         if i == State.debugSelectedUpgrade then
             gfx.setColor(gfx.kColorBlack)
@@ -1361,6 +1368,7 @@ local function drawSecretMenu()
         { name = "Value", type = "upgrade", index = 1, max = 24 },
         { name = "Speed", type = "upgrade", index = 2, max = 12 },
         { name = "Line",  type = "upgrade", index = 3, max = 12 },
+        { name = "Boost", type = "upgrade", index = 4, max = 6 },
         { name = "Fish 1", type = "fishSize", index = 1, max = 100 },
         { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
         { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
@@ -1523,7 +1531,7 @@ function playdate.update()
         end
 
     elseif State.currentScreen == "secret_menu" then
-        local numItems = 14
+        local numItems = 15
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -1531,23 +1539,23 @@ function playdate.update()
         end
 
         local idx = State.secretMenuIndex
-        if idx <= 3 then -- Upgrades
+        if idx <= 4 then -- Upgrades (Value, Speed, Line, Boost)
             local uIdx = idx
-            local maxLevel = (uIdx == 2 or uIdx == 3) and 12 or 24
-            local minLevel = -maxLevel
+            local maxLevel = (uIdx == 2 or uIdx == 3) and 12 or (uIdx == 4 and 6 or 24)
+            local minLevel = (uIdx == 4) and 0 or -maxLevel
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.upgrades[uIdx].level = math.max(minLevel, State.upgrades[uIdx].level - 1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.upgrades[uIdx].level = math.min(maxLevel, State.upgrades[uIdx].level + 1)
             end
-        elseif idx >= 4 and idx <= 7 then -- Fish Sizes
-            local sIdx = idx - 3
+        elseif idx >= 5 and idx <= 8 then -- Fish Sizes
+            local sIdx = idx - 4
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishSizes[sIdx] = math.max(1, State.fishSizes[sIdx] - 1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.fishSizes[sIdx] = math.min(100, State.fishSizes[sIdx] + 1)
             end
-        elseif idx == 8 then -- Wave Size
+        elseif idx == 9 then -- Wave Size
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveScale = math.max(0.1, State.waveScale - 0.1)
                 preScaleWaves()
@@ -1555,13 +1563,13 @@ function playdate.update()
                 State.waveScale = math.min(2.0, State.waveScale + 0.1)
                 preScaleWaves()
             end
-        elseif idx == 9 then -- Wave Animation Speed
+        elseif idx == 10 then -- Wave Animation Speed
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveAnimSpeed = math.min(10, State.waveAnimSpeed + 1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.waveAnimSpeed = math.max(1, State.waveAnimSpeed - 1)
             end
-        elseif idx == 10 then -- Wave Count
+        elseif idx == 11 then -- Wave Count
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.waveCount = math.max(0, State.waveCount - 10)
                 initWaves()
@@ -1569,7 +1577,7 @@ function playdate.update()
                 State.waveCount = math.min(300, State.waveCount + 10)
                 initWaves()
             end
-        elseif idx == 11 then -- Fish Count
+        elseif idx == 12 then -- Fish Count
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishCount = math.max(1, State.fishCount - 1)
                 spawnFish()
@@ -1577,19 +1585,19 @@ function playdate.update()
                 State.fishCount = math.min(50, State.fishCount + 1)
                 spawnFish()
             end
-        elseif idx == 12 then -- Fish Speed
+        elseif idx == 13 then -- Fish Speed
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.fishSpeedMult = math.max(0.1, State.fishSpeedMult - 0.1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.fishSpeedMult = math.min(5.0, State.fishSpeedMult + 0.1)
             end
-        elseif idx == 13 then -- Boost Cooldown
+        elseif idx == 14 then -- Boost Cooldown
             if playdate.buttonJustPressed(playdate.kButtonLeft) then
                 State.boostCooldownDuration = math.max(0.0, State.boostCooldownDuration - 0.1)
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.boostCooldownDuration = math.min(10.0, State.boostCooldownDuration + 0.1)
             end
-        elseif idx == 14 then -- Markers
+        elseif idx == 15 then -- Markers
             if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.showFishMarkers = not State.showFishMarkers
             end
@@ -1631,7 +1639,7 @@ function playdate.update()
             sel = State.selectedUpgrade
             if playdate.buttonJustPressed(playdate.kButtonA) then
                 local nextLevel = State.upgrades[sel].level + 1
-                local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+                local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
                 if nextLevel <= maxLevel then
                     local cost = calculateUpgradeCost(sel, nextLevel)
                     if State.money >= cost then
@@ -1671,11 +1679,11 @@ function playdate.update()
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.upgrades[sel].level = math.max(0, State.upgrades[sel].level - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+            local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
             State.upgrades[sel].level = math.min(maxLevel, State.upgrades[sel].level + 1)
         elseif playdate.buttonJustPressed(playdate.kButtonA) then
             local nextLevel = State.upgrades[sel].level + 1
-            local maxLevel = (sel == 2 or sel == 3) and 12 or 24
+            local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
             if nextLevel <= maxLevel then
                 local cost = calculateUpgradeCost(sel, nextLevel)
                 if State.money >= cost then
