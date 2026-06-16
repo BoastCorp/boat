@@ -52,6 +52,7 @@ local State = {
         bounceFrames = 0, -- New: duration of bounce override
         boostSpeed = 0,   -- Arcade boost
         boostFrames = 0,
+        boostCooldownFrames = 0,
     },
     littleguy = {
         x = 0,
@@ -83,6 +84,7 @@ local State = {
     debugSelectedUpgrade = 1,
     -- Secret Menu State
     secretMenuIndex = 1,
+    boostCooldownDuration = 3.0,
     fishSizes = { 10, 20, 30, 40 },
     -- Wave Settings
     waveScale = 0.3,
@@ -517,6 +519,7 @@ local function resetRound()
     State.boat.velocity_y = 0
     State.boat.boostSpeed = 0
     State.boat.boostFrames = 0
+    State.boat.boostCooldownFrames = 0
     State.totalRunsPlayed = State.totalRunsPlayed + 1
     spawnFish()
     initWaves()
@@ -604,10 +607,16 @@ end
 local function updateInput()
     local boat = State.boat
 
+    -- Decrement Cooldown
+    if boat.boostCooldownFrames > 0 then
+        boat.boostCooldownFrames = boat.boostCooldownFrames - 1
+    end
+
     -- Trigger Boost (Up button)
-    if playdate.buttonJustPressed(playdate.kButtonUp) and boat.boostFrames <= 0 then
+    if playdate.buttonJustPressed(playdate.kButtonUp) and boat.boostFrames <= 0 and boat.boostCooldownFrames <= 0 then
         boat.boostSpeed = 11.0 -- Initial arcade burst speed
         boat.boostFrames = 60   -- Duration of boost decay (1.2s at 50fps)
+        boat.boostCooldownFrames = math.floor(State.boostCooldownDuration * Config.RefreshRate)
         -- Snap moveAngle to visual angle for immediate lunge in nose direction
         boat.moveAngle = boat.angle
     end
@@ -982,6 +991,41 @@ local function drawBoat(x, y, angle)
     end
 end
 
+local function drawBoostIndicator()
+    local boat = State.boat
+    local cooldownMax = math.floor(State.boostCooldownDuration * Config.RefreshRate)
+    
+    -- Always draw the background circle as a "recharging" UI element
+    local margin = 20
+    local x = 400 - margin
+    local y = 240 - margin
+    local radius = 12
+    
+    gfx.setLineWidth(2)
+    
+    if boat.boostCooldownFrames > 0 then
+        -- Draw empty-ish circle with progress fill
+        gfx.setColor(gfx.kColorWhite)
+        gfx.drawCircleAtPoint(x, y, radius)
+        
+        local fraction = boat.boostCooldownFrames / cooldownMax
+        -- Fill up as it recharges: from 0 (top) around 360 degrees
+        local d = (radius - 3) * 2
+        gfx.fillEllipseInRect(x - (radius - 3), y - (radius - 3), d, d, 0, 360 * (1 - fraction))
+    elseif boat.boostFrames > 0 then
+        -- Boost active: solid white circle with inverted dot?
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillCircleAtPoint(x, y, radius)
+        gfx.setColor(gfx.kColorBlack)
+        gfx.fillCircleAtPoint(x, y, 4)
+    else
+        -- Ready to use: double circle or something distinct
+        gfx.setColor(gfx.kColorWhite)
+        gfx.drawCircleAtPoint(x, y, radius)
+        gfx.fillCircleAtPoint(x, y, radius - 5)
+    end
+end
+
 local function drawContent()
     local bx, by = State.boat.x, State.boat.y
     local time = State.totalFramesPlayed
@@ -1081,6 +1125,9 @@ local function drawContent()
     -- Money display
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.drawText("$" .. State.money, 4, 4)
+
+    -- Boost Cooldown Indicator
+    drawBoostIndicator()
 
     -- Pause message
     if State.isPaused then
@@ -1323,6 +1370,7 @@ local function drawSecretMenu()
         { name = "W-Count", type = "waveCount", value = State.waveCount },
         { name = "F-Count", type = "fishCount", value = State.fishCount },
         { name = "F-Speed", type = "fishSpeed", value = State.fishSpeedMult },
+        { name = "B-Cooldown", type = "boostCooldown", value = State.boostCooldownDuration },
         { name = "Markers", type = "toggle", key = "showFishMarkers" },
     }
 
@@ -1351,7 +1399,7 @@ local function drawSecretMenu()
 
         gfx.drawText(item.name, xLabel, y)
 
-        if item.type == "upgrade" or item.type == "fishSize" or item.type == "waveScale" or item.type == "waveAnim" or item.type == "waveCount" or item.type == "fishCount" or item.type == "fishSpeed" or item.type == "smokeScale" or item.type == "smokeFreq" then
+        if item.type == "upgrade" or item.type == "fishSize" or item.type == "waveScale" or item.type == "waveAnim" or item.type == "waveCount" or item.type == "fishCount" or item.type == "fishSpeed" or item.type == "boostCooldown" or item.type == "smokeScale" or item.type == "smokeFreq" then
             local val, min, max
             if item.type == "upgrade" then
                 val = State.upgrades[item.index].level
@@ -1381,6 +1429,10 @@ local function drawSecretMenu()
                 val = math.floor(State.fishSpeedMult * 10)
                 min = 1
                 max = 50
+            elseif item.type == "boostCooldown" then
+                val = math.floor(State.boostCooldownDuration * 10)
+                min = 0
+                max = 100
             elseif item.type == "smokeScale" then
                 val = math.floor(State.smokeScale * 100)
                 min = 10
@@ -1400,7 +1452,8 @@ local function drawSecretMenu()
             -- Draw value text
             local displayVal = tostring(val)
             if item.type == "waveScale" or item.type == "smokeScale" then displayVal = val .. "%"
-            elseif item.type == "fishSpeed" then displayVal = (val/10) .. "x" end
+            elseif item.type == "fishSpeed" then displayVal = (val/10) .. "x"
+            elseif item.type == "boostCooldown" then displayVal = (val/10) .. "s" end
             gfx.drawText(displayVal, xSlider + sliderWidth + 10, y)
 
         elseif item.type == "toggle" then
@@ -1470,7 +1523,7 @@ function playdate.update()
         end
 
     elseif State.currentScreen == "secret_menu" then
-        local numItems = 13
+        local numItems = 14
         if playdate.buttonJustPressed(playdate.kButtonUp) then
             State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -1530,7 +1583,13 @@ function playdate.update()
             elseif playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.fishSpeedMult = math.min(5.0, State.fishSpeedMult + 0.1)
             end
-        elseif idx == 13 then -- Markers
+        elseif idx == 13 then -- Boost Cooldown
+            if playdate.buttonJustPressed(playdate.kButtonLeft) then
+                State.boostCooldownDuration = math.max(0.0, State.boostCooldownDuration - 0.1)
+            elseif playdate.buttonJustPressed(playdate.kButtonRight) then
+                State.boostCooldownDuration = math.min(10.0, State.boostCooldownDuration + 0.1)
+            end
+        elseif idx == 14 then -- Markers
             if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
                 State.showFishMarkers = not State.showFishMarkers
             end
