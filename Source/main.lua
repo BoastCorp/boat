@@ -900,38 +900,53 @@ local function updateInput()
                 for j = 1, i do
                     poly[j] = wake[j]
                 end
+
+                -- Broadphase: Calculate bounding box of the closed loop
+                local minX, maxX = wake[1].wx, wake[1].wx
+                local minY, maxY = wake[1].wy, wake[1].wy
+                for j = 2, i do
+                    local wp = wake[j]
+                    if wp.wx < minX then minX = wp.wx
+                    elseif wp.wx > maxX then maxX = wp.wx end
+                    if wp.wy < minY then minY = wp.wy
+                    elseif wp.wy > maxY then maxY = wp.wy end
+                end
+
                 -- Catch fish inside the polygon (80% coverage check)
                 local caught = 0
                 for _, f in ipairs(State.fish) do
                     if f.alive then
-                        local size = f.size or 20
-                        local w = (size * 1.5) / 2
-                        local h = (size * 0.7) / 2
-                        local rad = math.rad(f.angle or 0)
-                        local cosA = math.cos(rad)
-                        local sinA = math.sin(rad)
-                        
-                        -- Define 5 points to check (Center, Head, Tail, Left, Right)
-                        local points = {
-                            {f.x, f.y},                                -- Center
-                            {f.x + cosA * w, f.y + sinA * w},          -- Head
-                            {f.x - cosA * w, f.y - sinA * w},          -- Tail
-                            {f.x - sinA * h, f.y + cosA * h},          -- Left Side
-                            {f.x + sinA * h, f.y - cosA * h}           -- Right Side
-                        }
-                        
-                        local pointsInside = 0
-                        for p = 1, 5 do
-                            if pointInPolygon(points[p][1], points[p][2], poly) then
-                                pointsInside = pointsInside + 1
+                        -- Only run checks if the fish center is within the loop bounding box
+                        if f.x >= minX and f.x <= maxX and f.y >= minY and f.y <= maxY then
+                            local size = f.size or 20
+                            local w = (size * 1.5) / 2
+                            local h = (size * 0.7) / 2
+                            local rad = math.rad(f.angle or 0)
+                            local cosA = math.cos(rad)
+                            local sinA = math.sin(rad)
+                            
+                            -- Define 5 points to check (Center, Head, Tail, Left, Right)
+                            local points = {
+                                {f.x, f.y},                                -- Center
+                                {f.x + cosA * w, f.y + sinA * w},          -- Head
+                                {f.x - cosA * w, f.y - sinA * w},          -- Tail
+                                {f.x - sinA * h, f.y + cosA * h},          -- Left Side
+                                {f.x + sinA * h, f.y - cosA * h}           -- Right Side
+                            }
+                            
+                            local pointsInside = 0
+                            for p = 1, 5 do
+                                if pointInPolygon(points[p][1], points[p][2], poly) then
+                                    pointsInside = pointsInside + 1
+                                end
                             end
-                        end
-                        
-                        -- Require 80% (4 out of 5) points inside to catch
-                        if pointsInside >= 4 then
-                            f.alive = false
-                            State.money = State.money + 1 + State.upgrades[1].level
-                            caught = caught + 1
+                            
+                            -- Require 80% (4 out of 5) points inside to catch
+                            if pointsInside >= 4 then
+                                f.alive = false
+                                State.money = State.money + 1 + State.upgrades[1].level
+                                caught = caught + 1
+                            end
                         end
                     end
                 end
