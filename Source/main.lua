@@ -7,6 +7,7 @@ import "input"
 import "physics"
 import "entities"
 import "ui"
+import "telemetry"
 
 gfx = playdate.graphics
 geometry = playdate.geometry
@@ -66,6 +67,7 @@ initWaves()
 
 spawnFish()
 initLittleGuy()
+Telemetry.init()
 
 -- ---------------------------------------------------------
 -- Progression Formulas
@@ -212,6 +214,7 @@ end
 -- ---------------------------------------------------------
 function playdate.update()
     handleInput()
+    Telemetry.update()
 
     -- ---------------------------------------------------------
     -- 1. State Updates
@@ -308,5 +311,6 @@ function resetRound()
     spawnFish()
     initWaves()
     initLittleGuy()
+    Telemetry.logDepartDock()
 end
 

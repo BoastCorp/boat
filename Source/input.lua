@@ -42,6 +42,8 @@ end
 function handleGameInput()
     if State.isPaused then
         if playdate.buttonJustPressed(playdate.kButtonA) then
+            local moneyEarned = State.hold * (1 + State.upgrades[1].level)
+            Telemetry.logReturnDock(State.hold, moneyEarned)
             State.isPaused = false
             State.currentScreen = "dock"
         elseif playdate.buttonJustPressed(playdate.kButtonB) then
@@ -56,6 +58,7 @@ function handleGameInput()
         State.boat.boostFrames = 60
         State.boat.boostCooldownFrames = math.floor(getActualBoostCooldown() * Config.RefreshRate)
         State.boat.moveAngle = State.boat.angle
+        Telemetry.logBoost()
     end
 
     -- Steering via Crank
@@ -99,6 +102,7 @@ function handleUpgradeInput()
                 if State.money >= cost then
                     State.money = State.money - cost
                     State.upgrades[sel].level = nextLevel
+                    Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
                 end
             end
         end

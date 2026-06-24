@@ -221,6 +221,9 @@ function updatePhysics()
         boat.bounceFrames = 20 -- Smooth decay over 20 frames
         boat.currentSpeed = boat.bounceSpeed
         
+        local isBoosting = boat.boostFrames > 0
+        Telemetry.logCollision(boat.currentSpeed, angleDiff, isBoosting)
+        
         -- Cancel boost on impact
         boat.boostSpeed = 0
         boat.boostFrames = 0
@@ -289,6 +292,7 @@ function updatePhysics()
             boat.y = boat.y + ny * 5.0
         end
     end
+    boat.isStuck = isStuck
 
     -- Check for littleguy collision (trigger dock prompt)
     local dx = boat.x - State.littleguy.x
@@ -375,7 +379,7 @@ function updatePhysics()
 
                 -- Catch fish inside the polygon (80% coverage check)
                 local caught = 0
-                for _, f in ipairs(State.fish) do
+                for idx, f in ipairs(State.fish) do
                     if f.alive then
                         -- Only run checks if the fish center is within the loop bounding box
                         if f.x >= minX and f.x <= maxX and f.y >= minY and f.y <= maxY then
@@ -407,12 +411,26 @@ function updatePhysics()
                                 f.alive = false
                                 State.money = State.money + 1 + State.upgrades[1].level
                                 caught = caught + 1
+                                local fishVal = 1 + State.upgrades[1].level
+                                Telemetry.logCatch(idx, State.hold + caught, 999, size, fishVal, 0, i, #wake)
                             end
                         end
                     end
                 end
 
-                State.hold = State.hold + caught
+                if caught == 0 then
+                    local nearby = 0
+                    local bx, by = State.boat.x, State.boat.y
+                    for _, f in ipairs(State.fish) do
+                        if f.alive then
+                            local dSq = (f.x - bx)^2 + (f.y - by)^2
+                            if dSq < 250000 then nearby = nearby + 1 end
+                        end
+                    end
+                    Telemetry.logLoopFail(i, nearby)
+                else
+                    State.hold = State.hold + caught
+                end
                 
                 -- Recycle wake into pool after catching
                 for _, wp in ipairs(wake) do
