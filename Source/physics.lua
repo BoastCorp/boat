@@ -318,36 +318,46 @@ function updatePhysics()
     local wake = State.wake
     local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
 
-    if #wake == 0 then
-        local p = table.remove(State.wakePool) or {}
-        p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
-        table.insert(wake, 1, p)
-    else
-        local prev = wake[1]
-        local dx = sternWx - prev.wx
-        local dy = sternWy - prev.wy
-        local dist = math.sqrt(dx * dx + dy * dy)
-        
-        -- If we've moved significantly, fill the gap with 1px segments
-        if dist >= 1 then
-            local steps = math.floor(dist)
-            local ux, uy = dx / dist, dy / dist
+    if boat.bounceFrames <= 0 and not isStuck then
+        if #wake == 0 then
+            local p = table.remove(State.wakePool) or {}
+            p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
+            table.insert(wake, 1, p)
+        else
+            local prev = wake[1]
+            local dx = sternWx - prev.wx
+            local dy = sternWy - prev.wy
+            local dist = math.sqrt(dx * dx + dy * dy)
             
-            for i = 1, steps do
-                local p = table.remove(State.wakePool) or {}
-                -- Interpolate along the path
-                p.wx = prev.wx + ux * i
-                p.wy = prev.wy + uy * i
-                p.rx, p.ry = right_wx, right_wy
+            -- If we've moved significantly, fill the gap with 1px segments
+            if dist >= 1 then
+                local steps = math.floor(dist)
+                local ux, uy = dx / dist, dy / dist
                 
-                table.insert(wake, 1, p)
-                
-                -- Enforce the tail limit inside the loop
-                if #wake > wakeMax then
-                    local removed = table.remove(wake)
-                    table.insert(State.wakePool, removed)
+                for i = 1, steps do
+                    local p = table.remove(State.wakePool) or {}
+                    -- Interpolate along the path
+                    p.wx = prev.wx + ux * i
+                    p.wy = prev.wy + uy * i
+                    p.rx, p.ry = right_wx, right_wy
+                    
+                    table.insert(wake, 1, p)
+                    
+                    -- Enforce the tail limit inside the loop
+                    if #wake > wakeMax then
+                        local removed = table.remove(wake)
+                        table.insert(State.wakePool, removed)
+                    end
                 end
             end
+        end
+    else
+        -- Recycle existing wake points if we are bouncing or stuck
+        if #wake > 0 then
+            for _, wp in ipairs(wake) do
+                table.insert(State.wakePool, wp)
+            end
+            State.wake = {}
         end
     end
 
