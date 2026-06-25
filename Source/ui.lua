@@ -498,3 +498,28 @@ function drawSecretMenu()
     end
 end
 
+function updateFloatingTexts()
+    for i = #State.floatingTexts, 1, -1 do
+        local ft = State.floatingTexts[i]
+        ft.timer = ft.timer - 1
+        if ft.timer <= 0 then
+            table.remove(State.floatingTexts, i)
+        else
+            ft.yOffset = ft.yOffset - 0.6
+        end
+    end
+end
+
+function drawFloatingTexts()
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.setFont(roobert11)
+    for _, ft in ipairs(State.floatingTexts) do
+        local textW = roobert11:getTextWidth(ft.text)
+        local x = 200 - (textW / 2)
+        local y = 120 + ft.yOffset
+        gfx.drawText(ft.text, x, y)
+    end
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.setFont(nil)
+end
+

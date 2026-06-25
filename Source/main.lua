@@ -200,6 +200,9 @@ local function drawContent()
     -- Boost Cooldown Indicator
     drawBoostIndicator()
 
+    -- Floating catch text popups
+    drawFloatingTexts()
+
     -- Pause message
     if State.isPaused then
         gfx.setColor(gfx.kColorBlack)
@@ -232,6 +235,7 @@ function playdate.update()
             updateFishMovement()
             updateLittleGuyMovement()
             updateWaves()
+            updateFloatingTexts()
             
             local time = State.totalFramesPlayed
             State.totalFramesPlayed = time + 1

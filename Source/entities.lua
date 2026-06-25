@@ -69,6 +69,10 @@ function spawnFish()
     
     local fishPlaced = 0
     
+    -- Determine index range in State.fishSizes based on active level
+    local sizeMinIdx = State.currentLevel == 2 and 5 or 1
+    local sizeMaxIdx = State.currentLevel == 2 and 8 or 4
+    
     -- 1. Spawn Schools (Clusters)
     local numSchools = 3
     local fishPerSchool = 3
@@ -94,7 +98,7 @@ function spawnFish()
                     local fx = anchorX + math.cos(angle) * dist
                     local fy = anchorY + math.sin(angle) * dist
                     
-                    local size = State.fishSizes[math.random(1, 4)]
+                    local size = State.fishSizes[math.random(sizeMinIdx, sizeMaxIdx)]
                     
                     -- Ensure individual fish has 50px clearance from barriers and NOT overlapping existing fish
                     if isSafeWater(fx, fy, 50) and not isOverlappingExistingFish(fx, fy, size) then
@@ -121,7 +125,7 @@ function spawnFish()
         
         -- Use 50px buffer as requested for all targets
         if isSafeWater(fx, fy, 50) then 
-            local size = math.random(1, 5) == 5 and 40 or 20
+            local size = math.random(1, 5) == 5 and State.fishSizes[sizeMaxIdx] or State.fishSizes[sizeMinIdx + 1]
             if not isOverlappingExistingFish(fx, fy, size) then
                 fishPlaced = fishPlaced + 1
                 State.fish[fishPlaced] = {
@@ -142,7 +146,7 @@ function spawnFish()
             local fx = math.random(minX, maxX)
             local fy = math.random(minY, maxY)
             if isSafeWater(fx, fy, 30) then
-                local size = math.random(1, 5) == 5 and 40 or 20
+                local size = math.random(1, 5) == 5 and State.fishSizes[sizeMaxIdx] or State.fishSizes[sizeMinIdx + 1]
                 if not isOverlappingExistingFish(fx, fy, size) then
                     fishPlaced = fishPlaced + 1
                     State.fish[fishPlaced] = {

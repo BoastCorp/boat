@@ -55,7 +55,7 @@ State = {
     -- Secret Menu State
     secretMenuIndex = 1,
     boostCooldownDuration = 3.0,
-    fishSizes = { 10, 20, 30, 40 },
+    fishSizes = { 10, 20, 30, 40, 50, 60, 70, 80 },
     -- Wave Settings
     waveScale = 0.3,
     waveAnimSpeed = 1,
@@ -66,6 +66,7 @@ State = {
     showFishMarkers = true,
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
+    floatingTexts = {},
 }
 
 function isUpgradeLocked(index)

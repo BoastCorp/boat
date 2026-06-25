@@ -416,6 +416,8 @@ function updatePhysics()
 
                 -- Catch fish inside the polygon (80% coverage check)
                 local caught = 0
+                local totalEarned = 0
+                local caughtFishList = {}
                 for idx, f in ipairs(State.fish) do
                     if f.alive then
                         -- Only run checks if the fish center is within the loop bounding box
@@ -447,19 +449,20 @@ function updatePhysics()
                             if pointsInside >= 4 then
                                 f.alive = false
                                 
-                                -- Determine base value (1, 2, 3, or 4) based on size index
+                                -- Determine base value based on size index
                                 local baseVal = 1
+                                local sizeValues = { 1, 2, 3, 4, 8, 16, 32, 64 }
                                 for sizeIdx, sz in ipairs(State.fishSizes) do
                                     if f.size == sz then
-                                        baseVal = sizeIdx
+                                        baseVal = sizeValues[sizeIdx] or sizeIdx
                                         break
                                     end
                                 end
                                 local fishVal = baseVal + getEffectiveUpgradeLevel(1)
                                 
-                                State.money = State.money + fishVal
                                 caught = caught + 1
-                                Telemetry.logCatch(idx, State.hold + caught, 999, size, fishVal, 0, i, #wake)
+                                totalEarned = totalEarned + fishVal
+                                table.insert(caughtFishList, { idx = idx, size = size, val = fishVal })
                             end
                         end
                     end
@@ -476,7 +479,32 @@ function updatePhysics()
                     end
                     Telemetry.logLoopFail(i, nearby)
                 else
+                    -- Calculate multipliers
+                    local isBoostCatch = State.boat.boostFrames > 0
+                    local multiCatchMult = 1.0 + (caught - 1) * 0.5
+                    local boostMult = isBoostCatch and 1.5 or 1.0
+                    local finalMult = multiCatchMult * boostMult
+                    
+                    local netPayout = 0
+                    for _, item in ipairs(caughtFishList) do
+                        local finalVal = math.floor(item.val * finalMult)
+                        netPayout = netPayout + finalVal
+                        Telemetry.logCatch(item.idx, State.hold + caught, 999, item.size, finalVal, 0, i, #wake)
+                    end
+                    
+                    State.money = State.money + netPayout
                     State.hold = State.hold + caught
+                    
+                    -- Spawn floating texts relative to boat
+                    if isBoostCatch then
+                        table.insert(State.floatingTexts, { text = "Boost Catch! +$" .. netPayout, yOffset = -25, timer = 50 })
+                    else
+                        table.insert(State.floatingTexts, { text = "+$" .. netPayout, yOffset = -25, timer = 50 })
+                    end
+                    
+                    if caught > 1 then
+                        table.insert(State.floatingTexts, { text = "x" .. caught, yOffset = -40, timer = 50 })
+                    end
                 end
                 
                 -- Recycle wake into pool after catching
