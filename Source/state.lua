@@ -37,6 +37,7 @@ State = {
     pausedByDock = false,
     currentScreen = "game",  -- "game" or "upgrade"
     currentLevel = 1,
+    originalLevel = 1,
     upgrades = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
@@ -67,6 +68,9 @@ State = {
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
     floatingTexts = {},
+    level2Unlocked = false,
+    infiniteMoney = false,
+    showUnlockPrompt = false,
 }
 
 function isUpgradeLocked(index)

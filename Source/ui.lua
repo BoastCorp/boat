@@ -134,7 +134,47 @@ function drawLevelSelectScreen()
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.drawText("U/D: Select Level   A/B: Confirm & Back", 95, 218)
     
+    if State.showUnlockPrompt then
+        local boxW = 280
+        local boxH = 130
+        local boxX = (400 - boxW) / 2
+        local boxY = (240 - boxH) / 2
+
+        -- Background
+        gfx.setColor(gfx.kColorBlack)
+        gfx.fillRect(boxX, boxY, boxW, boxH)
+        
+        -- Border
+        gfx.setColor(gfx.kColorWhite)
+        gfx.setLineWidth(2)
+        gfx.drawRect(boxX, boxY, boxW, boxH)
+        
+        -- Text drawing (white text on black background)
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        
+        gfx.setFont(roobert24)
+        local title = "UNLOCK LEVEL 2?"
+        local titleW = roobert24:getTextWidth(title)
+        gfx.drawText(title, boxX + (boxW - titleW) / 2, boxY + 15)
+        
+        gfx.setFont(roobert11)
+        local costText = "Cost: $250 (Current Wallet: $" .. State.money .. ")"
+        local costTextW = roobert11:getTextWidth(costText)
+        gfx.drawText(costText, boxX + (boxW - costTextW) / 2, boxY + 55)
+        
+        local actionText = ""
+        if State.money >= 250 then
+            actionText = "A: Purchase     B: Cancel"
+        else
+            actionText = "NOT ENOUGH CASH!     B: Cancel"
+        end
+        local actionTextW = roobert11:getTextWidth(actionText)
+        gfx.drawText(actionText, boxX + (boxW - actionTextW) / 2, boxY + 90)
+    end
+    
+    gfx.setLineWidth(1)
     gfx.setFont(nil)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
 end
 
 function drawUpgradeScreen()
@@ -382,14 +422,18 @@ function drawSecretMenu()
     gfx.setFont(roobert11)
 
     local items = {
-        { name = "Value", type = "upgrade", index = 1, max = 24 },
-        { name = "Speed", type = "upgrade", index = 2, max = 12 },
-        { name = "Line",  type = "upgrade", index = 3, max = 12 },
+        { name = "Value", type = "upgrade", index = 1, max = 20 },
+        { name = "Speed", type = "upgrade", index = 2, max = 20 },
+        { name = "Line",  type = "upgrade", index = 3, max = 20 },
         { name = "Boost", type = "upgrade", index = 4, max = 6 },
         { name = "Fish 1", type = "fishSize", index = 1, max = 100 },
         { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
         { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
         { name = "Fish 4", type = "fishSize", index = 4, max = 100 },
+        { name = "Fish 5", type = "fishSize", index = 5, max = 100 },
+        { name = "Fish 6", type = "fishSize", index = 6, max = 100 },
+        { name = "Fish 7", type = "fishSize", index = 7, max = 100 },
+        { name = "Fish 8", type = "fishSize", index = 8, max = 100 },
         { name = "W-Size",  type = "waveScale", value = State.waveScale },
         { name = "W-Anim",  type = "waveAnim", value = State.waveAnimSpeed },
         { name = "W-Count", type = "waveCount", value = State.waveCount },
@@ -397,6 +441,8 @@ function drawSecretMenu()
         { name = "F-Speed", type = "fishSpeed", value = State.fishSpeedMult },
         { name = "B-Cooldown", type = "boostCooldown", value = State.boostCooldownDuration },
         { name = "Markers", type = "toggle", key = "showFishMarkers" },
+        { name = "Inf-Money", type = "toggle", key = "infiniteMoney" },
+        { name = "L2-Unlock", type = "toggle", key = "level2Unlocked" },
     }
 
     -- Scrolling logic: show max 8 items at a time

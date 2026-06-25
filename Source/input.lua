@@ -77,13 +77,40 @@ function handleDockInput()
     elseif playdate.buttonJustPressed(playdate.kButtonRight) then
         State.currentScreen = "music"
     elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+        State.originalLevel = State.currentLevel
         State.currentScreen = "level_select"
     end
 end
 
 function handleLevelSelectInput()
-    if playdate.buttonJustPressed(playdate.kButtonB) or playdate.buttonJustPressed(playdate.kButtonA) then
+    if State.showUnlockPrompt then
+        if playdate.buttonJustPressed(playdate.kButtonA) then
+            if State.money >= 250 then
+                State.money = State.money - 250
+                State.level2Unlocked = true
+                State.showUnlockPrompt = false
+                State.currentLevel = 2
+                updateLevelAssets()
+                State.currentScreen = "dock"
+            end
+        elseif playdate.buttonJustPressed(playdate.kButtonB) then
+            State.showUnlockPrompt = false
+            State.currentLevel = 1
+            updateLevelAssets()
+        end
+        return
+    end
+
+    if playdate.buttonJustPressed(playdate.kButtonB) then
+        State.currentLevel = State.originalLevel
+        updateLevelAssets()
         State.currentScreen = "dock"
+    elseif playdate.buttonJustPressed(playdate.kButtonA) then
+        if State.currentLevel == 2 and not State.level2Unlocked then
+            State.showUnlockPrompt = true
+        else
+            State.currentScreen = "dock"
+        end
     elseif playdate.buttonJustPressed(playdate.kButtonUp) or playdate.buttonJustPressed(playdate.kButtonDown) then
         if State.currentLevel == 1 then
             State.currentLevel = 2
@@ -153,7 +180,7 @@ function handleMusicInput()
 end
 
 function handleSecretMenuInput()
-    local numItems = 15
+    local numItems = 21
     if playdate.buttonJustPressed(playdate.kButtonUp) then
         State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
     elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -163,21 +190,21 @@ function handleSecretMenuInput()
     local idx = State.secretMenuIndex
     if idx <= 4 then -- Upgrades
         local uIdx = idx
-        local maxLevel = getMaxUpgradeLevel(uIdx)
+        local maxLevel = (uIdx == 4) and 6 or 20
         local minLevel = (uIdx == 4) and 0 or -maxLevel
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.upgrades[uIdx].level = math.max(minLevel, State.upgrades[uIdx].level - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             State.upgrades[uIdx].level = math.min(maxLevel, State.upgrades[uIdx].level + 1)
         end
-    elseif idx >= 5 and idx <= 8 then -- Fish Sizes
+    elseif idx >= 5 and idx <= 12 then -- Fish Sizes 1-8
         local sIdx = idx - 4
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.fishSizes[sIdx] = math.max(1, State.fishSizes[sIdx] - 1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             State.fishSizes[sIdx] = math.min(100, State.fishSizes[sIdx] + 1)
         end
-    elseif idx == 9 then -- Wave Size
+    elseif idx == 13 then -- Wave Size
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.waveScale = math.max(0.1, State.waveScale - 0.1)
             preScaleWaves()
@@ -185,13 +212,13 @@ function handleSecretMenuInput()
             State.waveScale = math.min(2.0, State.waveScale + 0.1)
             preScaleWaves()
         end
-    elseif idx == 10 then -- Wave Anim
+    elseif idx == 14 then -- Wave Anim
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.waveAnimSpeed = math.min(10, State.waveAnimSpeed + 1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             State.waveAnimSpeed = math.max(1, State.waveAnimSpeed - 1)
         end
-    elseif idx == 11 then -- Wave Count
+    elseif idx == 15 then -- Wave Count
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.waveCount = math.max(0, State.waveCount - 10)
             initWaves()
@@ -199,7 +226,7 @@ function handleSecretMenuInput()
             State.waveCount = math.min(300, State.waveCount + 10)
             initWaves()
         end
-    elseif idx == 12 then -- Fish Count
+    elseif idx == 16 then -- Fish Count
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.fishCount = math.max(1, State.fishCount - 1)
             spawnFish()
@@ -207,21 +234,29 @@ function handleSecretMenuInput()
             State.fishCount = math.min(50, State.fishCount + 1)
             spawnFish()
         end
-    elseif idx == 13 then -- Fish Speed
+    elseif idx == 17 then -- Fish Speed
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.fishSpeedMult = math.max(0.1, State.fishSpeedMult - 0.1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             State.fishSpeedMult = math.min(5.0, State.fishSpeedMult + 0.1)
         end
-    elseif idx == 14 then -- Boost CD
+    elseif idx == 18 then -- Boost CD
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.boostCooldownDuration = math.max(0.0, State.boostCooldownDuration - 0.1)
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
             State.boostCooldownDuration = math.min(10.0, State.boostCooldownDuration + 0.1)
         end
-    elseif idx == 15 then -- Markers
+    elseif idx == 19 then -- Markers
         if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
             State.showFishMarkers = not State.showFishMarkers
+        end
+    elseif idx == 20 then -- Infinite Money
+        if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
+            State.infiniteMoney = not State.infiniteMoney
+        end
+    elseif idx == 21 then -- Level 2 Unlock
+        if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
+            State.level2Unlocked = not State.level2Unlocked
         end
     end
 

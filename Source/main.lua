@@ -226,6 +226,10 @@ function playdate.update()
     handleInput()
     Telemetry.update()
 
+    if State.infiniteMoney then
+        State.money = 99999
+    end
+
     -- ---------------------------------------------------------
     -- 1. State Updates
     -- ---------------------------------------------------------
