@@ -36,6 +36,7 @@ State = {
     isPaused = false,
     pausedByDock = false,
     currentScreen = "game",  -- "game" or "upgrade"
+    currentLevel = 1,
     upgrades = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level

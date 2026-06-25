@@ -83,6 +83,58 @@ function drawDockScreen()
     else
         gfx.drawText("DOCK (Image missing)", 100, 100)
     end
+
+    -- Draw simple menu instructions at the bottom
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+    gfx.setFont(roobert11)
+    gfx.drawText("▲ Play    ▼ Level    ◀ Upgrades    ▶ Soundtrack", 60, 222)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.setFont(nil)
+end
+
+function drawLevelSelectScreen()
+    gfx.clear(gfx.kColorWhite)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+
+    -- Header
+    gfx.setFont(roobert24)
+    gfx.drawText("SELECT LEVEL", 120, 15)
+    gfx.drawLine(0, 48, 400, 48)
+
+    -- Level options
+    local startY = 70
+    local itemHeight = 45
+    local width = 260
+    local startX = (400 - width) / 2
+
+    for lvl = 1, 2 do
+        local y = startY + (lvl - 1) * (itemHeight + 15)
+        local isSelected = (State.currentLevel == lvl)
+
+        if isSelected then
+            gfx.setColor(gfx.kColorBlack)
+            gfx.fillRect(startX, y, width, itemHeight)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        else
+            gfx.setColor(gfx.kColorBlack)
+            gfx.drawRect(startX, y, width, itemHeight)
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        end
+
+        gfx.setFont(roobert24)
+        local text = "LEVEL " .. lvl
+        local textW = roobert24:getTextWidth(text)
+        gfx.drawText(text, startX + (width - textW) / 2, y + 10)
+    end
+
+    -- Footer
+    gfx.drawLine(0, 210, 400, 210)
+    gfx.setFont(roobert11)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.drawText("U/D: Select Level   A/B: Confirm & Back", 95, 218)
+    
+    gfx.setFont(nil)
 end
 
 function drawUpgradeScreen()

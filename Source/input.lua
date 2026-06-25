@@ -34,6 +34,8 @@ function handleInput()
         handleMusicInput()
     elseif State.currentScreen == "secret_menu" then
         handleSecretMenuInput()
+    elseif State.currentScreen == "level_select" then
+        handleLevelSelectInput()
     elseif State.currentScreen == "debug" then
         handleDebugMenuInput()
     end
@@ -74,6 +76,21 @@ function handleDockInput()
         State.currentScreen = "upgrade"
     elseif playdate.buttonJustPressed(playdate.kButtonRight) then
         State.currentScreen = "music"
+    elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+        State.currentScreen = "level_select"
+    end
+end
+
+function handleLevelSelectInput()
+    if playdate.buttonJustPressed(playdate.kButtonB) or playdate.buttonJustPressed(playdate.kButtonA) then
+        State.currentScreen = "dock"
+    elseif playdate.buttonJustPressed(playdate.kButtonUp) or playdate.buttonJustPressed(playdate.kButtonDown) then
+        if State.currentLevel == 1 then
+            State.currentLevel = 2
+        else
+            State.currentLevel = 1
+        end
+        updateLevelAssets()
     end
 end
 
