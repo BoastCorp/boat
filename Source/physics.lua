@@ -419,9 +419,19 @@ function updatePhysics()
                             -- Require 80% (4 out of 5) points inside to catch
                             if pointsInside >= 4 then
                                 f.alive = false
-                                State.money = State.money + 1 + State.upgrades[1].level
+                                
+                                -- Determine base value (1, 2, 3, or 4) based on size index
+                                local baseVal = 1
+                                for sizeIdx, sz in ipairs(State.fishSizes) do
+                                    if f.size == sz then
+                                        baseVal = sizeIdx
+                                        break
+                                    end
+                                end
+                                local fishVal = baseVal + State.upgrades[1].level
+                                
+                                State.money = State.money + fishVal
                                 caught = caught + 1
-                                local fishVal = 1 + State.upgrades[1].level
                                 Telemetry.logCatch(idx, State.hold + caught, 999, size, fishVal, 0, i, #wake)
                             end
                         end
