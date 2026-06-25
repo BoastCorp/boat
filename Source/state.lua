@@ -42,6 +42,10 @@ State = {
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
         { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
         { name = "Boost",    level = 0 },  -- [4] Boost cooldown: -0.5s per level
+        { name = "Value 2",  level = 0 },  -- [5] Level 2 fish value multiplier
+        { name = "Speed 2",  level = 0 },  -- [6] Level 2 boat speed
+        { name = "Line 2",   level = 0 },  -- [7] Level 2 wake length
+        { name = "Boost 2",  level = 0 },  -- [8] Level 2 boost (locked)
     },
     selectedUpgrade = 1,
     selectedMusic = 1,          -- Currently active track
@@ -63,3 +67,16 @@ State = {
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
 }
+
+function isUpgradeLocked(index)
+    if index > 4 and State.currentLevel == 1 then return true end -- Row 2 locked if on Level 1
+    return false
+end
+
+function getMaxUpgradeLevel(index)
+    if index == 4 or index == 8 then
+        return 3
+    else
+        return 10
+    end
+end

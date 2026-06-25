@@ -77,8 +77,8 @@ Telemetry.init()
 -- ---------------------------------------------------------
 -- Progression Formulas
 -- ---------------------------------------------------------
-local UPGRADE_BASE_PRICES = { 5, 5, 2, 18 }
--- Value=$5, Speed=$5, Line=$2, Boost=$18
+local UPGRADE_BASE_PRICES = { 5, 5, 2, 18, 25, 25, 15, 50 }
+-- Value=$5, Speed=$5, Line=$2, Boost=$18, Value2=$25, Speed2=$25, Line2=$15, Boost2=$50
 
 -- ---------------------------------------------------------
 -- Input & Logic
