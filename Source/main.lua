@@ -277,6 +277,7 @@ function resetRound()
         table.insert(State.wakePool, p)
     end
     State.wake = {}
+    State.boat.wakeLength = 0
     
     -- Find a safe spawn point for the boat starting at 852, 1065
     local startX, startY = 852, 1065

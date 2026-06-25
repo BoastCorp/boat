@@ -2,7 +2,7 @@ $pdc = "C:\Program Files\PlaydateSDK\bin\pdc.exe"
 $sim = "C:\Program Files\PlaydateSDK\bin\PlaydateSimulator.exe"
 
 # Resolve absolute path for build output
-$outputPath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) "..\boat.pdx"))
+$outputPath = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\boat.pdx"))
 Write-Host "PDC Path: $pdc"
 Write-Host "SIM Path: $sim"
 Write-Host "Output Path: $outputPath"
@@ -11,7 +11,7 @@ Write-Host "Output Path: $outputPath"
 if (Test-Path $outputPath) { Remove-Item -Recurse -Force $outputPath }
 
 # Build
-& $pdc . $outputPath
+& $pdc $PSScriptRoot $outputPath
 
 # Launch simulator
 Write-Host "Launching simulator..."

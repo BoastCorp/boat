@@ -230,6 +230,7 @@ function updatePhysics()
         
         -- Clear wake so it doesn't look weird during the fast movement
         State.wake = {}
+        State.boat.wakeLength = 0
     end
 
     -- ---------------------------------------------------------
@@ -318,14 +319,16 @@ function updatePhysics()
     local right_wy = -dirX
 
     local wake = State.wake
-    local wakeMax = math.floor((Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1)) / Config.WakeSegmentLength)
+    local maxPhysLen = Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1)
 
     if boat.bounceFrames <= 0 and not isStuck then
         if #wake == 0 then
             local p = table.remove(State.wakePool) or {}
             p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
             p.angle = State.boat.angle
+            p.dist = 0
             table.insert(wake, 1, p)
+            State.boat.wakeLength = 0
         else
             local prev = wake[1]
             local dx = sternWx - prev.wx
@@ -344,11 +347,35 @@ function updatePhysics()
                 local p = table.remove(State.wakePool) or {}
                 p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
                 p.angle = State.boat.angle
+                p.dist = dist
                 table.insert(wake, 1, p)
+                State.boat.wakeLength = (State.boat.wakeLength or 0) + dist
                 
-                if #wake > wakeMax then
+                -- We've locked in the point, so distance from stern to wake[1] is now 0
+                dist = 0
+            end
+            
+            -- Smoothly trim the tail every frame to match max physical length
+            local totalVisualLen = (State.boat.wakeLength or 0) + dist
+            while #wake > 1 and totalVisualLen > maxPhysLen do
+                local excess = totalVisualLen - maxPhysLen
+                local lastSegmentDist = wake[#wake - 1].dist or 0
+                
+                if excess >= lastSegmentDist then
                     local removed = table.remove(wake)
                     table.insert(State.wakePool, removed)
+                    State.boat.wakeLength = State.boat.wakeLength - lastSegmentDist
+                    wake[#wake].dist = 0
+                    totalVisualLen = State.boat.wakeLength + dist
+                else
+                    local p1 = wake[#wake - 1]
+                    local p2 = wake[#wake]
+                    local ratio = (lastSegmentDist - excess) / lastSegmentDist
+                    p2.wx = p1.wx + (p2.wx - p1.wx) * ratio
+                    p2.wy = p1.wy + (p2.wy - p1.wy) * ratio
+                    p1.dist = lastSegmentDist - excess
+                    State.boat.wakeLength = State.boat.wakeLength - excess
+                    break
                 end
             end
         end
@@ -359,18 +386,23 @@ function updatePhysics()
                 table.insert(State.wakePool, wp)
             end
             State.wake = {}
+            State.boat.wakeLength = 0
         end
     end
 
     -- Loop detection: if stern gets close to an older wake point, catch fish inside
-    local minLoopIdx = math.ceil(Config.Catch.minLoopLength / Config.WakeSegmentLength)
-    if #wake >= minLoopIdx then
+    if #wake >= 3 then
         local threshSq = Config.Catch.closeThreshold * Config.Catch.closeThreshold
-        for i = minLoopIdx, #wake do
+        local currentDistToWake1 = math.sqrt((sternWx - wake[1].wx)^2 + (sternWy - wake[1].wy)^2)
+        local pathDist = currentDistToWake1
+        
+        for i = 1, #wake do
             local p = wake[i]
-            local ddx = sternWx - p.wx
-            local ddy = sternWy - p.wy
-            if ddx * ddx + ddy * ddy <= threshSq then
+            
+            if pathDist >= Config.Catch.minLoopLength then
+                local ddx = sternWx - p.wx
+                local ddy = sternWy - p.wy
+                if ddx * ddx + ddy * ddy <= threshSq then
                 -- Broadphase: Calculate bounding box of the closed loop
                 local minX, maxX = wake[1].wx, wake[1].wx
                 local minY, maxY = wake[1].wy, wake[1].wy
@@ -452,8 +484,13 @@ function updatePhysics()
                     table.insert(State.wakePool, wp)
                 end
                 State.wake = {}
+                State.boat.wakeLength = 0
                 break
             end
+            end
+            
+            -- Add the length of the segment starting at this point for the NEXT iteration's check
+            pathDist = pathDist + (p.dist or 0)
         end
     end
 end
