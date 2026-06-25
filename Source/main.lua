@@ -262,16 +262,24 @@ function playdate.update()
         gfx.drawText("Error: Unknown Screen '" .. tostring(State.currentScreen) .. "'", 10, 100)
     end
 end
-function calculateUpgradeCost(upgradeIndex, level)
-    local basePrice = UPGRADE_BASE_PRICES[upgradeIndex]
-    -- Tier 1: levels 1-12 use 1.18 exponent
-    -- Tier 2: levels 13+ use 1.25 exponent (steeper cost curve)
-    local exponent = level <= 12 and 1.18 or 1.25
-    return math.floor(basePrice * (exponent ^ level) + level)
+function calculateUpgradeCost(upgradeIndex, internalLevel)
+    local effectiveIndex = upgradeIndex
+    local effectiveLevel = internalLevel
+    
+    if upgradeIndex > 4 then
+        effectiveIndex = upgradeIndex - 4
+        effectiveLevel = internalLevel + getMaxUpgradeLevel(effectiveIndex)
+    end
+
+    local basePrice = UPGRADE_BASE_PRICES[effectiveIndex]
+    -- Row 1 upgrades use a 1.18 exponent, while Row 2 upgrades use a steeper 1.25 exponent
+    -- to match the player's accelerated Level 2 income
+    local exponent = upgradeIndex > 4 and 1.25 or 1.18
+    return math.floor(basePrice * (exponent ^ effectiveLevel) + effectiveLevel)
 end
 
 function getActualBoostCooldown()
-    return math.max(0, State.boostCooldownDuration - (State.upgrades[4].level * 0.5))
+    return math.max(0, State.boostCooldownDuration - (getEffectiveUpgradeLevel(4) * 0.5))
 end
 
 function resetRound()

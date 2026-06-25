@@ -44,7 +44,7 @@ end
 function handleGameInput()
     if State.isPaused then
         if playdate.buttonJustPressed(playdate.kButtonA) then
-            local moneyEarned = State.hold * (1 + State.upgrades[1].level)
+            local moneyEarned = State.hold * (1 + getEffectiveUpgradeLevel(1))
             Telemetry.logReturnDock(State.hold, moneyEarned)
             State.isPaused = false
             State.currentScreen = "dock"
@@ -99,27 +99,32 @@ function handleUpgradeInput()
         State.currentScreen = "dock"
     else
         local sel = State.selectedUpgrade
-        local numUpgrades = #State.upgrades
         if playdate.buttonJustPressed(playdate.kButtonUp) then
-            if sel > 2 then State.selectedUpgrade = sel - 2 end
+            if sel > 4 then State.selectedUpgrade = sel - 4 end
         elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-            if sel + 2 <= numUpgrades then State.selectedUpgrade = sel + 2 end
+            if sel <= 4 then State.selectedUpgrade = sel + 4 end
         elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
-            if sel % 2 == 0 then State.selectedUpgrade = sel - 1 end
+            if sel == 2 or sel == 3 or sel == 4 or sel == 6 or sel == 7 or sel == 8 then
+                State.selectedUpgrade = sel - 1
+            end
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-            if sel % 2 == 1 and sel + 1 <= numUpgrades then State.selectedUpgrade = sel + 1 end
+            if sel == 1 or sel == 2 or sel == 3 or sel == 5 or sel == 6 or sel == 7 then
+                State.selectedUpgrade = sel + 1
+            end
         end
 
         sel = State.selectedUpgrade
         if playdate.buttonJustPressed(playdate.kButtonA) then
-            local nextLevel = State.upgrades[sel].level + 1
-            local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
-            if nextLevel <= maxLevel then
-                local cost = calculateUpgradeCost(sel, nextLevel)
-                if State.money >= cost then
-                    State.money = State.money - cost
-                    State.upgrades[sel].level = nextLevel
-                    Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
+            if not isUpgradeLocked(sel) then
+                local nextLevel = State.upgrades[sel].level + 1
+                local maxLevel = getMaxUpgradeLevel(sel)
+                if nextLevel <= maxLevel then
+                    local cost = calculateUpgradeCost(sel, nextLevel)
+                    if State.money >= cost then
+                        State.money = State.money - cost
+                        State.upgrades[sel].level = nextLevel
+                        Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
+                    end
                 end
             end
         end
@@ -158,7 +163,7 @@ function handleSecretMenuInput()
     local idx = State.secretMenuIndex
     if idx <= 4 then -- Upgrades
         local uIdx = idx
-        local maxLevel = (uIdx == 2 or uIdx == 3) and 12 or (uIdx == 4 and 6 or 24)
+        local maxLevel = getMaxUpgradeLevel(uIdx)
         local minLevel = (uIdx == 4) and 0 or -maxLevel
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.upgrades[uIdx].level = math.max(minLevel, State.upgrades[uIdx].level - 1)
@@ -237,11 +242,11 @@ function handleDebugMenuInput()
     elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
         State.upgrades[sel].level = math.max(0, State.upgrades[sel].level - 1)
     elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-        local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
+        local maxLevel = getMaxUpgradeLevel(sel)
         State.upgrades[sel].level = math.min(maxLevel, State.upgrades[sel].level + 1)
     elseif playdate.buttonJustPressed(playdate.kButtonA) then
         local nextLevel = State.upgrades[sel].level + 1
-        local maxLevel = (sel == 2 or sel == 3) and 12 or (sel == 4 and 6 or 24)
+        local maxLevel = getMaxUpgradeLevel(sel)
         if nextLevel <= maxLevel then
             local cost = calculateUpgradeCost(sel, nextLevel)
             if State.money >= cost then

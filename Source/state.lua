@@ -73,6 +73,16 @@ function isUpgradeLocked(index)
     return false
 end
 
+function getEffectiveUpgradeLevel(baseIndex)
+    if baseIndex >= 1 and baseIndex <= 4 then
+        local row2Level = State.upgrades[baseIndex + 4].level
+        if row2Level > 0 then
+            return getMaxUpgradeLevel(baseIndex) + row2Level
+        end
+    end
+    return State.upgrades[baseIndex].level
+end
+
 function getMaxUpgradeLevel(index)
     if index == 4 or index == 8 then
         return 3

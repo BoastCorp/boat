@@ -98,7 +98,7 @@ function updatePhysics()
     -- Calculate engine speed based on angular misalignment
     local cosAngleDiff = math.cos(math.rad(angleDiff))
     local dragFactor = math.max(0.4, cosAngleDiff)
-    local speedMult = 1 + State.upgrades[2].level * 0.15
+    local speedMult = 1 + getEffectiveUpgradeLevel(2) * 0.15
     local engineTargetSpeed = Config.Boat.baseSpeed * speedMult * dragFactor
 
     -- Handle Momentum (Bounce or Boost)
@@ -319,7 +319,7 @@ function updatePhysics()
     local right_wy = -dirX
 
     local wake = State.wake
-    local maxPhysLen = Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1)
+    local maxPhysLen = Config.WakeMaxLength * (1 + getEffectiveUpgradeLevel(3) * 0.1)
 
     if boat.bounceFrames <= 0 and not isStuck then
         if #wake == 0 then
@@ -455,7 +455,7 @@ function updatePhysics()
                                         break
                                     end
                                 end
-                                local fishVal = baseVal + State.upgrades[1].level
+                                local fishVal = baseVal + getEffectiveUpgradeLevel(1)
                                 
                                 State.money = State.money + fishVal
                                 caught = caught + 1

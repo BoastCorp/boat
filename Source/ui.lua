@@ -149,25 +149,28 @@ function drawUpgradeScreen()
     gfx.setFont(roobert11)
     gfx.drawText("D-Pad: Select   A: Buy Upgrade   B: Back", 140, 218)
 
-    -- Grid logic (2x2)
-    local padding = 10
-    local gridY = 10
-    local gridH = 190
-    local cellW = (400 - padding * 3) / 2
-    local cellH = (gridH - padding) / 2
+    -- Grid logic (4x2)
+    local cellW = 90
+    local cellH = 80
+    local colSpacing = 8
+    local rowSpacing = 15
+    local startX = (400 - (4 * cellW + 3 * colSpacing)) / 2  -- 8px padding on sides
+    local startY = 15
 
     for i, upgrade in ipairs(State.upgrades) do
-        local col = (i - 1) % 2
-        local row = math.floor((i - 1) / 2)
-        local x = padding + col * (cellW + padding)
-        local y = gridY + row * (cellH + padding)
+        local col = (i - 1) % 4
+        local row = math.floor((i - 1) / 4)
+        local x = startX + col * (cellW + colSpacing)
+        local y = startY + row * (cellH + rowSpacing)
 
         local isSelected = (i == State.selectedUpgrade)
+        local locked = isUpgradeLocked(i)
 
         -- Draw box
         if isSelected then
             gfx.setColor(gfx.kColorBlack)
             gfx.fillRect(x, y, cellW, cellH)
+            gfx.setColor(gfx.kColorWhite)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         else
             gfx.setColor(gfx.kColorBlack)
@@ -175,26 +178,74 @@ function drawUpgradeScreen()
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 
-        -- Name
-        gfx.setFont(roobert24)
-        gfx.drawText(upgrade.name, x + 10, y + 10)
-
-        -- Level
+        -- Name (using small font roobert11 to prevent overflow on 90px cells)
         gfx.setFont(roobert11)
-        local maxLevel = (i == 2 or i == 3) and 12 or (i == 4 and 6 or 24)
-        gfx.drawText("Level " .. upgrade.level .. " / " .. maxLevel, x + 10, y + 45)
+        gfx.drawText(upgrade.name, x + 6, y + 6)
 
-        -- Cost
-        if upgrade.level < maxLevel then
-            local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-            local canAfford = State.money >= nextCost
-            local costStr = "Cost: $" .. nextCost
-            if not canAfford and not isSelected then
-                -- Optional: draw cost differently if unaffordable?
-            end
-            gfx.drawText(costStr, x + 10, y + 65)
+        -- Progress bar
+        local maxLevel = getMaxUpgradeLevel(i)
+        
+        -- Set shape drawing color to match the box selection state
+        if isSelected then
+            gfx.setColor(gfx.kColorWhite)
         else
-            gfx.drawText("MAXED", x + 10, y + 65)
+            gfx.setColor(gfx.kColorBlack)
+        end
+        
+        -- Draw graphical progress bar
+        local barY = y + 25
+        local barH = 6
+        local spacing = 1
+        
+        if maxLevel == 10 then
+            local segW = 6 -- 6 * 10 + 9 * 1 = 69px
+            local startSegX = x + 6
+            for j = 1, 10 do
+                local sx = startSegX + (j - 1) * (segW + spacing)
+                if upgrade.level >= j then
+                    gfx.fillRect(sx, barY, segW, barH)
+                else
+                    gfx.drawRect(sx, barY, segW, barH)
+                end
+            end
+        elseif maxLevel == 3 then
+            local segW = 22 -- 22 * 3 + 2 * 2 = 70px
+            local startSegX = x + 6
+            for j = 1, 3 do
+                local sx = startSegX + (j - 1) * (segW + 2)
+                if upgrade.level >= j then
+                    gfx.fillRect(sx, barY, segW, barH)
+                else
+                    gfx.drawRect(sx, barY, segW, barH)
+                end
+            end
+        end
+
+        -- Level text & Cost / Locked status
+        local displayLevel = upgrade.level
+        local displayMaxLevel = maxLevel
+        if i > 4 then
+            local prevMax = getMaxUpgradeLevel(i - 4)
+            displayLevel = upgrade.level + prevMax
+            displayMaxLevel = maxLevel + prevMax
+        end
+
+        gfx.setFont(roobert11)
+        gfx.drawText("Lvl " .. displayLevel .. "/" .. displayMaxLevel, x + 6, y + 42)
+
+        if locked then
+            if i == 8 then
+                gfx.drawText("LOCKED", x + 6, y + 58)
+            else
+                gfx.drawText("LVL 2 REQ", x + 6, y + 58)
+            end
+        else
+            if upgrade.level < maxLevel then
+                local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
+                gfx.drawText("Cost: $" .. nextCost, x + 6, y + 58)
+            else
+                gfx.drawText("MAXED", x + 6, y + 58)
+            end
         end
     end
 
@@ -273,7 +324,7 @@ function drawDebugMenu()
     for i = 1, #State.upgrades do
         local upgrade = State.upgrades[i]
         local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-        local maxLevel = (i == 2 or i == 3) and 12 or (i == 4 and 6 or 24)
+        local maxLevel = getMaxUpgradeLevel(i)
 
         if i == State.debugSelectedUpgrade then
             gfx.setColor(gfx.kColorBlack)
@@ -284,7 +335,14 @@ function drawDebugMenu()
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
         end
 
-        local levelStr = "L" .. upgrade.level .. "/" .. maxLevel
+        local displayLevel = upgrade.level
+        local displayMaxLevel = maxLevel
+        if i > 4 then
+            local prevMax = getMaxUpgradeLevel(i - 4)
+            displayLevel = upgrade.level + prevMax
+            displayMaxLevel = maxLevel + prevMax
+        end
+        local levelStr = "L" .. displayLevel .. "/" .. displayMaxLevel
         local costStr  = upgrade.level < maxLevel and ("Next:$" .. nextCost) or "MAXED"
         gfx.drawText(string.format("%-8s  %-8s  %s", upgrade.name, levelStr, costStr), 8, y)
 
@@ -300,7 +358,7 @@ function drawDebugMenu()
     -- Income breakdown
     gfx.drawText("INCOME BREAKDOWN:", 8, y)
     y = y + 12
-    local fishValue = 1 + State.upgrades[1].level
+    local fishValue = 1 + getEffectiveUpgradeLevel(1)
     gfx.drawText(string.format("Fish Value: $%d each", fishValue), 8, y)
     y = y + 10
     gfx.drawLine(0, y + 1, 200, y + 1)
