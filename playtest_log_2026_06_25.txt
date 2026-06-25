@@ -1,0 +1,678 @@
+--- Playtest Log - June 25, 2026 ---
+
+<USER_REQUEST>
+Heres the data can you please log it in a file so we can reference it at any time. put the date on it
+
+
+
+13:27:43: Loading: C:\g\boat\boat.pdx\
+13:27:43: SDK: C:\Program Files\PlaydateSDK
+13:27:43: Release: 3.0.6
+13:27:43: CMD: C:\g\boat\boat.pdx 
+[LOOP_FAIL] time_in_run=0m04.17s wake_len=107 nearby_fish=13
+[CATCH] time_in_run=0m07.52s hold_fill=1/999 fish_size=10 fish_value=$1 multi_catch_bonus=$0 loop_points=124
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=124 waste_ratio=34%
+[CHASE_DURATION] fish_id=5 duration=6.98s
+[LOOP_FAIL] time_in_run=0m11.26s wake_len=155 nearby_fish=12
+[LOOP_FAIL] time_in_run=0m13.62s wake_len=109 nearby_fish=9
+[LOOP_FAIL] time_in_run=0m15.00s wake_len=145 nearby_fish=9
+[BOOST] time_in_run=0m16.08s current_speed=1.74 coord={795,1118}
+[CATCH] time_in_run=0m19.68s hold_fill=2/999 fish_size=20 fish_value=$2 multi_catch_bonus=$0 loop_points=168
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=168 waste_ratio=11%
+[CHASE_DURATION] fish_id=10 duration=2.64s
+[LOOP_FAIL] time_in_run=0m23.08s wake_len=143 nearby_fish=13
+[BOOST] time_in_run=0m27.06s current_speed=1.59 coord={669,754}
+[CATCH] time_in_run=0m27.12s hold_fill=3/999 fish_size=20 fish_value=$2 multi_catch_bonus=$0 loop_points=164
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=164 waste_ratio=13%
+[BOOST_CATCH] time_in_run=0m27.12s hold_fill=3/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=9 duration=3.16s
+[BOOST] time_in_run=0m33.16s current_speed=1.51 coord={693,581}
+[CATCH] time_in_run=0m33.24s hold_fill=4/999 fish_size=10 fish_value=$1 multi_catch_bonus=$0 loop_points=131
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=131 waste_ratio=31%
+[BOOST_CATCH] time_in_run=0m33.24s hold_fill=4/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=1 duration=2.82s
+[BOOST] time_in_run=0m37.48s current_speed=1.51 coord={618,498}
+[LOOP_FAIL] time_in_run=0m37.54s wake_len=111 nearby_fish=8
+[CATCH] time_in_run=0m43.46s hold_fill=5/999 fish_size=20 fish_value=$2 multi_catch_bonus=$0 loop_points=135
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=135 waste_ratio=28%
+[CHASE_DURATION] fish_id=15 duration=10.20s
+[LOOP_FAIL] time_in_run=0m47.18s wake_len=112 nearby_fish=9
+[CATCH] time_in_run=0m49.00s hold_fill=6/999 fish_size=20 fish_value=$2 multi_catch_bonus=$0 loop_points=141
+[WAKE_WASTE_RATIO] run=0 total_points=187 points_in_loop=141 waste_ratio=24%
+[CHASE_DURATION] fish_id=2 duration=11.34s
+[CATCH] time_in_run=0m53.82s hold_fill=7/999 fish_size=20 fish_value=$2 multi_catch_bonus=$0 loop_points=114
+[WAKE_WASTE_RATIO] run=0 total_points=190 points_in_loop=114 waste_ratio=39%
+[CHASE_DURATION] fish_id=12 duration=16.02s
+[BOOST] time_in_run=0m55.06s current_speed=1.75 coord={595,655}
+[DEPART_DOCK] run=2 time_in_menu=0m00.00s wallet=12 upgrades={V:0,S:0,L:0,C:0}
+[LOOP_FAIL] time_in_run=0m01.04s wake_len=15 nearby_fish=7
+[LOOP_FAIL] time_in_run=0m03.62s wake_len=118 nearby_fish=6
+[BOOST] time_in_run=0m04.88s current_speed=1.75 coord={919,877}
+[MAP_COVERAGE] run=2 grid_visited=21/400 exploration_ratio=5% farthest_dist_from_spawn=637
+[CRANK_LOG] run=2 total_degrees_turned=657 average_rpm=12.6 direction_changes=9
+[EXCITEMENT_CRANK] run=2 proximity_rpm=14.7 travel_rpm=8.5 excitement_ratio=172%
+[DEAD_CASH] run=2 unspent_wallet=$12 percent_unspent=100% cheapest_available_upgrade=$3
+[FLOW_BUGS] run=2 near_misses=0 target_switches=4 loops_failed=2
+[INDICATOR_SUMMARY] run=2 avg_reaction_time=1.64s total_alignments=21
+[RETURN_DOCK] run=2 duration=0m08.72s fish_sold=0 money_earned=0 boosts_used=1 crashes=0
+[UPGRADE] run=2 upgrade=Value level=1 cost=$6 remaining_wallet=$6 session_elapsed=1m07.14s
+[UPGRADE] run=2 upgrade=Line level=1 cost=$3 remaining_wallet=$3 session_elapsed=1m07.14s
+[DEPART_DOCK] run=3 time_in_menu=0m16.54s wallet=3 upgrades={V:1,S:0,L:1,C:0}
+[LOOP_FAIL] time_in_run=0m04.14s wake_len=141 nearby_fish=11
+[LOOP_FAIL] time_in_run=0m06.32s wake_len=150 nearby_fish=10
+[LOOP_FAIL] time_in_run=0m09.26s wake_len=152 nearby_fish=10
+[LOOP_FAIL] time_in_run=0m11.32s wake_len=182 nearby_fish=9
+[BOOST] time_in_run=0m12.50s current_speed=1.63 coord={801,949}
+[LOOP_FAIL] time_in_run=0m17.21s wake_len=129 nearby_fish=12
+[LOOP_FAIL] time_in_run=0m22.34s wake_len=178 nearby_fish=13
+[LOOP_FAIL] time_in_run=0m26.64s wake_len=191 nearby_fish=8
+[LOOP_FAIL] time_in_run=0m27.98s wake_len=15 nearby_fish=8
+[BOOST] time_in_run=0m31.20s current_speed=1.75 coord={468,564}
+[CATCH] time_in_run=0m34.41s hold_fill=1/999 fish_size=30 fish_value=$4 multi_catch_bonus=$0 loop_points=164
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=164 waste_ratio=21%
+[CHASE_DURATION] fish_id=7 duration=1.68s
+[CATCH] time_in_run=0m34.41s hold_fill=2/999 fish_size=40 fish_value=$5 multi_catch_bonus=$0 loop_points=164
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=164 waste_ratio=21%
+[CHASE_DURATION] fish_id=14 duration=2.18s
+[CATCH] time_in_run=0m36.84s hold_fill=3/999 fish_size=20 fish_value=$3 multi_catch_bonus=$0 loop_points=133
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=133 waste_ratio=36%
+[CHASE_DURATION] fish_id=8 duration=5.60s
+[BOOST] time_in_run=0m41.46s current_speed=1.68 coord={555,477}
+[CATCH] time_in_run=0m41.50s hold_fill=4/999 fish_size=30 fish_value=$4 multi_catch_bonus=$0 loop_points=157
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=157 waste_ratio=24%
+[BOOST_CATCH] time_in_run=0m41.50s hold_fill=4/999 boost_speed=10.67
+[CHASE_DURATION] fish_id=9 duration=9.68s
+[BOOST] time_in_run=0m52.50s current_speed=1.52 coord={925,398}
+[LOOP_FAIL] time_in_run=0m52.60s wake_len=171 nearby_fish=3
+[BOOST] time_in_run=0m56.48s current_speed=1.56 coord={1076,572}
+[CATCH] time_in_run=0m56.60s hold_fill=5/999 fish_size=20 fish_value=$3 multi_catch_bonus=$0 loop_points=191
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=191 waste_ratio=8%
+[BOOST_CATCH] time_in_run=0m56.60s hold_fill=5/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=15 duration=8.98s
+[COLLISION] time_in_run=0m56.76s impact_speed=7.40 angle_diff=11.5 state=boosting
+[LOOP_FAIL] time_in_run=0m57.66s wake_len=15 nearby_fish=6
+[LOOP_FAIL] time_in_run=1m02.54s wake_len=133 nearby_fish=7
+[BOOST] time_in_run=1m06.54s current_speed=1.60 coord={883,959}
+[CATCH] time_in_run=1m06.66s hold_fill=6/999 fish_size=40 fish_value=$5 multi_catch_bonus=$0 loop_points=196
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=196 waste_ratio=6%
+[BOOST_CATCH] time_in_run=1m06.66s hold_fill=6/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=3 duration=65.42s
+[BOOST] time_in_run=1m10.60s current_speed=1.55 coord={527,609}
+[CATCH] time_in_run=1m16.60s hold_fill=7/999 fish_size=30 fish_value=$4 multi_catch_bonus=$0 loop_points=184
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=184 waste_ratio=11%
+[CHASE_DURATION] fish_id=4 duration=61.60s
+[BOOST] time_in_run=1m17.42s current_speed=1.72 coord={539,748}
+[COLLISION] time_in_run=1m22.88s impact_speed=1.70 angle_diff=14.0 state=normal
+[BOOST] time_in_run=1m23.46s current_speed=1.26 coord={773,1152}
+[BOOST] time_in_run=1m26.72s current_speed=1.75 coord={873,822}
+[LOOP_FAIL] time_in_run=1m31.48s wake_len=130 nearby_fish=5
+[BOOST] time_in_run=1m31.86s current_speed=1.75 coord={830,526}
+[CATCH] time_in_run=1m36.06s hold_fill=8/999 fish_size=20 fish_value=$3 multi_catch_bonus=$0 loop_points=184
+[WAKE_WASTE_RATIO] run=3 total_points=209 points_in_loop=184 waste_ratio=11%
+[CHASE_DURATION] fish_id=6 duration=80.00s
+[BOOST] time_in_run=1m36.54s current_speed=1.51 coord={523,806}
+[MAP_COVERAGE] run=3 grid_visited=137/400 exploration_ratio=34% farthest_dist_from_spawn=719
+[CRANK_LOG] run=3 total_degrees_turned=12017 average_rpm=20.5 direction_changes=73
+[EXCITEMENT_CRANK] run=3 proximity_rpm=21.9 travel_rpm=15.0 excitement_ratio=146%
+[RUN_PHASE_EFFICIENCY] run=3 first_half_rate=10.38s/fish second_half_rate=14.06s/fish decay_ratio=135%
+[DEAD_CASH] run=3 unspent_wallet=$3 percent_unspent=15% cheapest_available_upgrade=$4
+[STUCK_SUMMARY] run=3 stuck_recoveries=1 total_stuck_duration=0.02s
+[FLOW_BUGS] run=3 near_misses=0 target_switches=24 loops_failed=12
+[INDICATOR_SUMMARY] run=3 avg_reaction_time=2.20s total_alignments=327
+[RETURN_DOCK] run=3 duration=1m37.72s fish_sold=8 money_earned=16 boosts_used=12 crashes=2
+[UPGRADE] run=3 upgrade=Value level=2 cost=$8 remaining_wallet=$26 session_elapsed=2m44.86s
+[UPGRADE] run=3 upgrade=Value level=3 cost=$11 remaining_wallet=$15 session_elapsed=2m44.86s
+[UPGRADE] run=3 upgrade=Value level=4 cost=$13 remaining_wallet=$2 session_elapsed=2m44.86s
+[DEPART_DOCK] run=4 time_in_menu=0m34.50s wallet=2 upgrades={V:4,S:0,L:1,C:0}
+[CATCH] time_in_run=0m03.64s hold_fill=1/999 fish_size=20 fish_value=$6 multi_catch_bonus=$0 loop_points=170
+[WAKE_WASTE_RATIO] run=4 total_points=209 points_in_loop=170 waste_ratio=18%
+[BOOST_CATCH] time_in_run=0m03.64s hold_fill=1/999 boost_speed=1.75
+[CHASE_DURATION] fish_id=14 duration=2.46s
+[BOOST] time_in_run=0m04.48s current_speed=1.74 coord={770,875}
+[LOOP_FAIL] time_in_run=0m08.82s wake_len=153 nearby_fish=9
+[BOOST] time_in_run=0m11.22s current_speed=1.73 coord={387,581}
+[LOOP_FAIL] time_in_run=0m11.24s wake_len=123 nearby_fish=5
+[BOOST] time_in_run=0m16.54s current_speed=1.66 coord={382,550}
+[LOOP_FAIL] time_in_run=0m16.58s wake_len=164 nearby_fish=6
+[LOOP_FAIL] time_in_run=0m20.00s wake_len=127 nearby_fish=10
+[CATCH] time_in_run=0m21.30s hold_fill=2/999 fish_size=20 fish_value=$6 multi_catch_bonus=$0 loop_points=146
+[WAKE_WASTE_RATIO] run=4 total_points=148 points_in_loop=146 waste_ratio=1%
+[CHASE_DURATION] fish_id=7 duration=4.58s
+[LOOP_FAIL] time_in_run=0m23.46s wake_len=160 nearby_fish=8
+[LOOP_FAIL] time_in_run=0m24.80s wake_len=129 nearby_fish=9
+[BOOST] time_in_run=0m29.80s current_speed=1.74 coord={346,516}
+[CATCH] time_in_run=0m29.86s hold_fill=3/999 fish_size=30 fish_value=$7 multi_catch_bonus=$0 loop_points=204
+[WAKE_WASTE_RATIO] run=4 total_points=209 points_in_loop=204 waste_ratio=2%
+[BOOST_CATCH] time_in_run=0m29.86s hold_fill=3/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=8 duration=20.70s
+[COLLISION] time_in_run=0m29.96s impact_speed=8.89 angle_diff=5.7 state=boosting
+[COLLISION_CHAIN] chain_length=1 current_speed=8.89 coord={280,527}
+[BOOST] time_in_run=0m32.96s current_speed=1.74 coord={492,680}
+[BOOST] time_in_run=0m38.90s current_speed=1.71 coord={895,584}
+[CATCH] time_in_run=0m38.98s hold_fill=4/999 fish_size=20 fish_value=$6 multi_catch_bonus=$0 loop_points=173
+[WAKE_WASTE_RATIO] run=4 total_points=209 points_in_loop=173 waste_ratio=17%
+[BOOST_CATCH] time_in_run=0m38.98s hold_fill=4/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=15 duration=3.42s
+[LOOP_FAIL] time_in_run=0m44.24s wake_len=172 nearby_fish=9
+[BOOST] time_in_run=0m47.52s current_speed=1.48 coord={1025,627}
+[LOOP_FAIL] time_in_run=0m47.58s wake_len=163 nearby_fish=10
+[LOOP_FAIL] time_in_run=0m50.08s wake_len=203 nearby_fish=9
+[LOOP_FAIL] time_in_run=0m52.86s wake_len=161 nearby_fish=9
+[LOOP_FAIL] time_in_run=0m55.86s wake_len=161 nearby_fish=9
+[BOOST] time_in_run=0m57.74s current_speed=1.75 coord={1012,524}
+[MAP_COVERAGE] run=4 grid_visited=84/400 exploration_ratio=21% farthest_dist_from_spawn=789
+[CRANK_LOG] run=4 total_degrees_turned=8558 average_rpm=24.6 direction_changes=37
+[EXCITEMENT_CRANK] run=4 proximity_rpm=25.9 travel_rpm=18.3 excitement_ratio=141%
+[RUN_PHASE_EFFICIENCY] run=4 first_half_rate=10.65s/fish second_half_rate=18.31s/fish decay_ratio=171%
+[DEAD_CASH] run=4 unspent_wallet=$2 percent_unspent=9% cheapest_available_upgrade=$4
+[FLOW_BUGS] run=4 near_misses=0 target_switches=10 loops_failed=11
+[INDICATOR_SUMMARY] run=4 avg_reaction_time=1.90s total_alignments=243
+[RETURN_DOCK] run=4 duration=0m57.92s fish_sold=4 money_earned=20 boosts_used=8 crashes=1
+[UPGRADE] run=4 upgrade=Value level=5 cost=$16 remaining_wallet=$11 session_elapsed=3m42.78s
+[UPGRADE] run=4 upgrade=Line level=2 cost=$4 remaining_wallet=$7 session_elapsed=3m42.78s
+[UPGRADE] run=4 upgrade=Speed level=1 cost=$6 remaining_wallet=$1 session_elapsed=3m42.78s
+[DEPART_DOCK] run=5 time_in_menu=0m15.60s wallet=1 upgrades={V:5,S:1,L:2,C:0}
+[BOOST] time_in_run=0m05.42s current_speed=1.51 coord={819,1040}
+[LOOP_FAIL] time_in_run=0m05.50s wake_len=141 nearby_fish=11
+[LOOP_FAIL] time_in_run=0m10.92s wake_len=156 nearby_fish=14
+[BOOST] time_in_run=0m12.84s current_speed=1.93 coord={728,882}
+[CATCH] time_in_run=0m12.92s hold_fill=1/999 fish_size=10 fish_value=$6 multi_catch_bonus=$0 loop_points=187
+[WAKE_WASTE_RATIO] run=5 total_points=228 points_in_loop=187 waste_ratio=17%
+[BOOST_CATCH] time_in_run=0m12.92s hold_fill=1/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=7 duration=1.16s
+[CATCH] time_in_run=0m12.92s hold_fill=2/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=187
+[WAKE_WASTE_RATIO] run=5 total_points=228 points_in_loop=187 waste_ratio=17%
+[BOOST_CATCH] time_in_run=0m12.92s hold_fill=2/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=14 duration=6.94s
+[LOOP_FAIL] time_in_run=0m17.64s wake_len=216 nearby_fish=11
+[LOOP_FAIL] time_in_run=0m19.52s wake_len=154 nearby_fish=12
+[BOOST] time_in_run=0m24.50s current_speed=1.81 coord={592,892}
+[CATCH] time_in_run=0m24.54s hold_fill=3/999 fish_size=10 fish_value=$6 multi_catch_bonus=$0 loop_points=138
+[WAKE_WASTE_RATIO] run=5 total_points=228 points_in_loop=138 waste_ratio=39%
+[BOOST_CATCH] time_in_run=0m24.54s hold_fill=3/999 boost_speed=10.67
+[CHASE_DURATION] fish_id=8 duration=12.70s
+[LOOP_FAIL] time_in_run=0m29.80s wake_len=147 nearby_fish=5
+[BOOST] time_in_run=0m31.80s current_speed=1.87 coord={890,594}
+[CATCH] time_in_run=0m31.88s hold_fill=4/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=223
+[WAKE_WASTE_RATIO] run=5 total_points=228 points_in_loop=223 waste_ratio=2%
+[BOOST_CATCH] time_in_run=0m31.88s hold_fill=4/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=11 duration=4.24s
+[LOOP_FAIL] time_in_run=0m34.36s wake_len=155 nearby_fish=3
+[BOOST] time_in_run=0m36.38s current_speed=1.92 coord={937,521}
+[CATCH] time_in_run=0m36.48s hold_fill=5/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=191
+[WAKE_WASTE_RATIO] run=5 total_points=228 points_in_loop=191 waste_ratio=16%
+[BOOST_CATCH] time_in_run=0m36.48s hold_fill=5/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=10 duration=4.58s
+[LOOP_FAIL] time_in_run=0m41.90s wake_len=186 nearby_fish=10
+[BOOST] time_in_run=0m43.50s current_speed=1.88 coord={647,610}
+[CATCH] time_in_run=0m43.58s hold_fill=6/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=180
+[WAKE_WASTE_RATIO] run=5 total_points=221 points_in_loop=180 waste_ratio=18%
+[BOOST_CATCH] time_in_run=0m43.58s hold_fill=6/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=12 duration=5.50s
+[BOOST] time_in_run=0m49.48s current_speed=1.90 coord={364,506}
+[LOOP_FAIL] time_in_run=0m49.56s wake_len=208 nearby_fish=5
+[BOOST] time_in_run=0m53.02s current_speed=2.01 coord={572,710}
+[LOOP_FAIL] time_in_run=0m57.28s wake_len=217 nearby_fish=8
+[CATCH] time_in_run=0m59.34s hold_fill=7/999 fish_size=30 fish_value=$8 multi_catch_bonus=$0 loop_points=183
+[WAKE_WASTE_RATIO] run=5 total_points=225 points_in_loop=183 waste_ratio=18%
+[CHASE_DURATION] fish_id=3 duration=44.82s
+[BOOST] time_in_run=1m00.66s current_speed=1.61 coord={409,935}
+[LOOP_FAIL] time_in_run=1m00.74s wake_len=142 nearby_fish=7
+[COLLISION] time_in_run=1m00.88s impact_speed=8.11 angle_diff=5.4 state=boosting
+[BOOST] time_in_run=1m04.01s current_speed=1.58 coord={547,799}
+[BOOST] time_in_run=1m10.78s current_speed=1.78 coord={419,546}
+[LOOP_FAIL] time_in_run=1m10.92s wake_len=197 nearby_fish=4
+[COLLISION] time_in_run=1m11.12s impact_speed=6.76 angle_diff=43.2 state=boosting
+[LOOP_FAIL] time_in_run=1m11.87s wake_len=15 nearby_fish=3
+[BOOST] time_in_run=1m13.94s current_speed=2.01 coord={488,588}
+[MAP_COVERAGE] run=5 grid_visited=126/400 exploration_ratio=31% farthest_dist_from_spawn=816
+[CRANK_LOG] run=5 total_degrees_turned=10388 average_rpm=22.6 direction_changes=56
+[EXCITEMENT_CRANK] run=5 proximity_rpm=24.6 travel_rpm=13.1 excitement_ratio=187%
+[RUN_PHASE_EFFICIENCY] run=5 first_half_rate=8.18s/fish second_half_rate=13.02s/fish decay_ratio=159%
+[DEAD_CASH] run=5 unspent_wallet=$1 percent_unspent=2% cheapest_available_upgrade=$6
+[FLOW_BUGS] run=5 near_misses=0 target_switches=21 loops_failed=12
+[INDICATOR_SUMMARY] run=5 avg_reaction_time=2.09s total_alignments=246
+[RETURN_DOCK] run=5 duration=1m16.64s fish_sold=7 money_earned=42 boosts_used=12 crashes=2
+[UPGRADE] run=5 upgrade=Line level=3 cost=$6 remaining_wallet=$43 session_elapsed=4m59.42s
+[UPGRADE] run=5 upgrade=Line level=4 cost=$7 remaining_wallet=$36 session_elapsed=4m59.42s
+[UPGRADE] run=5 upgrade=Line level=5 cost=$9 remaining_wallet=$27 session_elapsed=4m59.42s
+[UPGRADE] run=5 upgrade=Line level=6 cost=$11 remaining_wallet=$16 session_elapsed=4m59.42s
+[UPGRADE] run=5 upgrade=Line level=7 cost=$13 remaining_wallet=$3 session_elapsed=4m59.42s
+[DEPART_DOCK] run=6 time_in_menu=0m22.88s wallet=3 upgrades={V:5,S:1,L:7,C:0}
+[LOOP_FAIL] time_in_run=0m00.78s wake_len=15 nearby_fish=12
+[BOOST] time_in_run=0m04.26s current_speed=2.00 coord={859,954}
+[CATCH] time_in_run=0m04.38s hold_fill=1/999 fish_size=40 fish_value=$9 multi_catch_bonus=$0 loop_points=288
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=288 waste_ratio=10%
+[BOOST_CATCH] time_in_run=0m04.38s hold_fill=1/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=9 duration=3.48s
+[BOOST] time_in_run=0m08.89s current_speed=1.98 coord={855,799}
+[CATCH] time_in_run=0m09.02s hold_fill=2/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=241
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=241 waste_ratio=25%
+[BOOST_CATCH] time_in_run=0m09.02s hold_fill=2/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=14 duration=4.52s
+[LOOP_FAIL] time_in_run=0m12.08s wake_len=147 nearby_fish=9
+[COLLISION] time_in_run=0m17.37s impact_speed=2.01 angle_diff=0.9 state=normal
+[COLLISION_CHAIN] chain_length=1 current_speed=2.01 coord={1112,628}
+[COLLISION] time_in_run=0m17.82s impact_speed=2.01 angle_diff=0.7 state=normal
+[COLLISION_CHAIN] chain_length=2 current_speed=2.01 coord={1106,645}
+[BOOST] time_in_run=0m18.98s current_speed=1.97 coord={1042,711}
+[LOOP_FAIL] time_in_run=0m26.58s wake_len=278 nearby_fish=9
+[BOOST] time_in_run=0m28.32s current_speed=1.59 coord={972,1004}
+[CATCH] time_in_run=0m28.42s hold_fill=3/999 fish_size=10 fish_value=$6 multi_catch_bonus=$0 loop_points=166
+[WAKE_WASTE_RATIO] run=6 total_points=249 points_in_loop=166 waste_ratio=33%
+[BOOST_CATCH] time_in_run=0m28.42s hold_fill=3/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=7 duration=28.22s
+[LOOP_FAIL] time_in_run=0m30.96s wake_len=302 nearby_fish=8
+[BOOST] time_in_run=0m33.68s current_speed=1.86 coord={786,1027}
+[CATCH] time_in_run=0m33.70s hold_fill=4/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=161
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=161 waste_ratio=50%
+[BOOST_CATCH] time_in_run=0m33.70s hold_fill=4/999 boost_speed=11.00
+[CHASE_DURATION] fish_id=10 duration=33.68s
+[CATCH] time_in_run=0m36.16s hold_fill=5/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=206
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=206 waste_ratio=36%
+[CHASE_DURATION] fish_id=11 duration=2.26s
+[LOOP_FAIL] time_in_run=0m38.56s wake_len=177 nearby_fish=9
+[BOOST] time_in_run=0m39.25s current_speed=1.95 coord={484,922}
+[CATCH] time_in_run=0m44.04s hold_fill=6/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=208
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=208 waste_ratio=35%
+[CHASE_DURATION] fish_id=6 duration=4.50s
+[BOOST] time_in_run=0m44.90s current_speed=1.94 coord={510,900}
+[BOOST] time_in_run=0m48.94s current_speed=2.00 coord={665,582}
+[CATCH] time_in_run=0m49.04s hold_fill=7/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=209
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=209 waste_ratio=35%
+[BOOST_CATCH] time_in_run=0m49.04s hold_fill=7/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=2 duration=3.14s
+[BOOST] time_in_run=0m53.54s current_speed=1.95 coord={590,564}
+[CATCH] time_in_run=0m53.72s hold_fill=8/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=280
+[WAKE_WASTE_RATIO] run=6 total_points=323 points_in_loop=280 waste_ratio=13%
+[BOOST_CATCH] time_in_run=0m53.72s hold_fill=8/999 boost_speed=8.62
+[CHASE_DURATION] fish_id=1 duration=4.66s
+[BOOST] time_in_run=0m57.36s current_speed=2.01 coord={610,572}
+[BOOST] time_in_run=1m02.58s current_speed=2.01 coord={811,1039}
+[MAP_COVERAGE] run=6 grid_visited=119/400 exploration_ratio=29% farthest_dist_from_spawn=729
+[CRANK_LOG] run=6 total_degrees_turned=7580 average_rpm=18.9 direction_changes=33
+[EXCITEMENT_CRANK] run=6 proximity_rpm=20.7 travel_rpm=12.0 excitement_ratio=172%
+[RUN_PHASE_EFFICIENCY] run=6 first_half_rate=8.43s/fish second_half_rate=8.26s/fish decay_ratio=97%
+[DEAD_CASH] run=6 unspent_wallet=$3 percent_unspent=5% cheapest_available_upgrade=$8
+[STUCK_SUMMARY] run=6 stuck_recoveries=1 total_stuck_duration=0.02s
+[FLOW_BUGS] run=6 near_misses=0 target_switches=19 loops_failed=5
+[INDICATOR_SUMMARY] run=6 avg_reaction_time=2.21s total_alignments=189
+[RETURN_DOCK] run=6 duration=1m06.72s fish_sold=8 money_earned=48 boosts_used=11 crashes=2
+[UPGRADE] run=6 upgrade=Line level=8 cost=$15 remaining_wallet=$45 session_elapsed=6m06.14s
+[UPGRADE] run=6 upgrade=Line level=9 cost=$17 remaining_wallet=$28 session_elapsed=6m06.14s
+[UPGRADE] run=6 upgrade=Line level=10 cost=$20 remaining_wallet=$8 session_elapsed=6m06.14s
+[UPGRADE] run=6 upgrade=Speed level=2 cost=$8 remaining_wallet=$0 session_elapsed=6m06.14s
+[DEPART_DOCK] run=7 time_in_menu=0m12.42s wallet=0 upgrades={V:5,S:2,L:10,C:0}
+[CATCH] time_in_run=0m03.36s hold_fill=1/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=195
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=195 waste_ratio=48%
+[BOOST_CATCH] time_in_run=0m03.36s hold_fill=1/999 boost_speed=2.19
+[CHASE_DURATION] fish_id=4 duration=1.30s
+[BOOST] time_in_run=0m07.32s current_speed=2.00 coord={633,912}
+[CATCH] time_in_run=0m07.48s hold_fill=2/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=290
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=290 waste_ratio=23%
+[BOOST_CATCH] time_in_run=0m07.48s hold_fill=2/999 boost_speed=8.89
+[CHASE_DURATION] fish_id=1 duration=1.28s
+[CATCH] time_in_run=0m07.48s hold_fill=3/999 fish_size=30 fish_value=$8 multi_catch_bonus=$0 loop_points=290
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=290 waste_ratio=23%
+[BOOST_CATCH] time_in_run=0m07.48s hold_fill=3/999 boost_speed=8.89
+[CHASE_DURATION] fish_id=6 duration=1.96s
+[BOOST] time_in_run=0m13.04s current_speed=2.12 coord={515,846}
+[BOOST] time_in_run=0m16.87s current_speed=1.98 coord={510,1001}
+[CATCH] time_in_run=0m17.06s hold_fill=4/999 fish_size=30 fish_value=$8 multi_catch_bonus=$0 loop_points=271
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=271 waste_ratio=28%
+[BOOST_CATCH] time_in_run=0m17.06s hold_fill=4/999 boost_speed=8.62
+[CHASE_DURATION] fish_id=3 duration=5.88s
+[BOOST] time_in_run=0m20.54s current_speed=2.04 coord={531,913}
+[LOOP_FAIL] time_in_run=0m20.64s wake_len=220 nearby_fish=10
+[BOOST] time_in_run=0m25.10s current_speed=2.16 coord={692,881}
+[BOOST] time_in_run=0m31.16s current_speed=2.22 coord={710,899}
+[BOOST] time_in_run=0m38.80s current_speed=2.18 coord={679,914}
+[CATCH] time_in_run=0m39.04s hold_fill=5/999 fish_size=30 fish_value=$8 multi_catch_bonus=$0 loop_points=314
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=314 waste_ratio=17%
+[BOOST_CATCH] time_in_run=0m39.04s hold_fill=5/999 boost_speed=7.87
+[CHASE_DURATION] fish_id=2 duration=31.46s
+[LOOP_FAIL] time_in_run=0m41.18s wake_len=324 nearby_fish=8
+[BOOST] time_in_run=0m45.62s current_speed=2.26 coord={734,832}
+[LOOP_FAIL] time_in_run=0m45.70s wake_len=198 nearby_fish=10
+[BOOST] time_in_run=0m49.52s current_speed=2.27 coord={918,1037}
+[CATCH] time_in_run=0m52.82s hold_fill=6/999 fish_size=10 fish_value=$6 multi_catch_bonus=$0 loop_points=295
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=295 waste_ratio=22%
+[CHASE_DURATION] fish_id=9 duration=51.08s
+[BOOST] time_in_run=0m55.42s current_speed=2.05 coord={573,956}
+[CATCH] time_in_run=0m55.48s hold_fill=7/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=191
+[WAKE_WASTE_RATIO] run=7 total_points=351 points_in_loop=191 waste_ratio=45%
+[BOOST_CATCH] time_in_run=0m55.48s hold_fill=7/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=5 duration=51.42s
+[CATCH] time_in_run=0m58.52s hold_fill=8/999 fish_size=30 fish_value=$8 multi_catch_bonus=$0 loop_points=365
+[WAKE_WASTE_RATIO] run=7 total_points=380 points_in_loop=365 waste_ratio=3%
+[CHASE_DURATION] fish_id=7 duration=56.80s
+[BOOST] time_in_run=1m02.78s current_speed=2.27 coord={797,995}
+[LOOP_FAIL] time_in_run=1m05.00s wake_len=225 nearby_fish=4
+[LOOP_FAIL] time_in_run=1m08.14s wake_len=209 nearby_fish=4
+[BOOST] time_in_run=1m09.66s current_speed=2.14 coord={478,1039}
+[CATCH] time_in_run=1m09.78s hold_fill=9/999 fish_size=20 fish_value=$7 multi_catch_bonus=$0 loop_points=194
+[WAKE_WASTE_RATIO] run=7 total_points=252 points_in_loop=194 waste_ratio=23%
+[BOOST_CATCH] time_in_run=1m09.78s hold_fill=9/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=11 duration=55.32s
+[MAP_COVERAGE] run=7 grid_visited=93/400 exploration_ratio=23% farthest_dist_from_spawn=538
+[CRANK_LOG] run=7 total_degrees_turned=7952 average_rpm=18.9 direction_changes=33
+[EXCITEMENT_CRANK] run=7 proximity_rpm=19.3 travel_rpm=17.0 excitement_ratio=114%
+[RUN_PHASE_EFFICIENCY] run=7 first_half_rate=4.26s/fish second_half_rate=10.62s/fish decay_ratio=249%
+[DEAD_CASH] run=7 unspent_wallet=$0 percent_unspent=0% cheapest_available_upgrade=$11
+[FLOW_BUGS] run=7 near_misses=0 target_switches=57 loops_failed=5
+[INDICATOR_SUMMARY] run=7 avg_reaction_time=2.38s total_alignments=146
+[RETURN_DOCK] run=7 duration=1m10.18s fish_sold=9 money_earned=54 boosts_used=12 crashes=0
+[UPGRADE] run=7 upgrade=Value level=6 cost=$19 remaining_wallet=$47 session_elapsed=7m16.32s
+[UPGRADE] run=7 upgrade=Line level=11 cost=$23 remaining_wallet=$24 session_elapsed=7m16.32s
+[UPGRADE] run=7 upgrade=Value level=7 cost=$22 remaining_wallet=$2 session_elapsed=7m16.32s
+[DEPART_DOCK] run=8 time_in_menu=0m22.52s wallet=2 upgrades={V:7,S:2,L:11,C:0}
+[LOOP_FAIL] time_in_run=0m02.76s wake_len=127 nearby_fish=14
+[BOOST] time_in_run=0m04.67s current_speed=1.60 coord={941,952}
+[CATCH] time_in_run=0m04.73s hold_fill=1/999 fish_size=20 fish_value=$9 multi_catch_bonus=$0 loop_points=217
+[WAKE_WASTE_RATIO] run=8 total_points=273 points_in_loop=217 waste_ratio=20%
+[BOOST_CATCH] time_in_run=0m04.73s hold_fill=1/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=13 duration=1.72s
+[BOOST] time_in_run=0m08.24s current_speed=1.99 coord={660,930}
+[LOOP_FAIL] time_in_run=0m08.38s wake_len=251 nearby_fish=14
+[BOOST] time_in_run=0m13.96s current_speed=2.23 coord={661,841}
+[CATCH] time_in_run=0m14.12s hold_fill=2/999 fish_size=40 fish_value=$11 multi_catch_bonus=$0 loop_points=282
+[WAKE_WASTE_RATIO] run=8 total_points=398 points_in_loop=282 waste_ratio=29%
+[BOOST_CATCH] time_in_run=0m14.12s hold_fill=2/999 boost_speed=8.89
+[CHASE_DURATION] fish_id=11 duration=8.68s
+[BOOST] time_in_run=0m18.60s current_speed=2.11 coord={719,935}
+[CATCH] time_in_run=0m18.79s hold_fill=3/999 fish_size=30 fish_value=$10 multi_catch_bonus=$0 loop_points=354
+[WAKE_WASTE_RATIO] run=8 total_points=398 points_in_loop=354 waste_ratio=11%
+[BOOST_CATCH] time_in_run=0m18.79s hold_fill=3/999 boost_speed=8.36
+[CHASE_DURATION] fish_id=1 duration=12.50s
+[CATCH] time_in_run=0m18.79s hold_fill=4/999 fish_size=30 fish_value=$10 multi_catch_bonus=$0 loop_points=354
+[WAKE_WASTE_RATIO] run=8 total_points=398 points_in_loop=354 waste_ratio=11%
+[BOOST_CATCH] time_in_run=0m18.79s hold_fill=4/999 boost_speed=8.36
+[CHASE_DURATION] fish_id=3 duration=13.84s
+[BOOST] time_in_run=0m21.70s current_speed=2.26 coord={538,794}
+[LOOP_FAIL] time_in_run=0m21.76s wake_len=268 nearby_fish=11
+[BOOST] time_in_run=0m30.04s current_speed=2.10 coord={843,723}
+[BOOST] time_in_run=0m35.56s current_speed=2.20 coord={896,729}
+[CATCH] time_in_run=0m35.66s hold_fill=5/999 fish_size=30 fish_value=$10 multi_catch_bonus=$0 loop_points=347
+[WAKE_WASTE_RATIO] run=8 total_points=398 points_in_loop=347 waste_ratio=12%
+[BOOST_CATCH] time_in_run=0m35.66s hold_fill=5/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=4 duration=8.74s
+[BOOST] time_in_run=0m38.84s current_speed=2.04 coord={591,844}
+[CATCH] time_in_run=0m39.00s hold_fill=6/999 fish_size=20 fish_value=$9 multi_catch_bonus=$0 loop_points=230
+[WAKE_WASTE_RATIO] run=8 total_points=398 points_in_loop=230 waste_ratio=42%
+[BOOST_CATCH] time_in_run=0m39.00s hold_fill=6/999 boost_speed=8.89
+[CHASE_DURATION] fish_id=10 duration=28.94s
+[BOOST] time_in_run=0m46.68s current_speed=2.12 coord={936,758}
+[LOOP_FAIL] time_in_run=0m46.78s wake_len=383 nearby_fish=8
+[LOOP_FAIL] time_in_run=0m51.68s wake_len=176 nearby_fish=8
+[COLLISION] time_in_run=0m52.80s impact_speed=2.21 angle_diff=13.8 state=normal
+[LOOP_FAIL] time_in_run=0m53.48s wake_len=15 nearby_fish=8
+[BOOST] time_in_run=0m55.56s current_speed=1.92 coord={1011,721}
+[CATCH] time_in_run=0m55.62s hold_fill=7/999 fish_size=20 fish_value=$9 multi_catch_bonus=$0 loop_points=203
+[WAKE_WASTE_RATIO] run=8 total_points=279 points_in_loop=203 waste_ratio=27%
+[BOOST_CATCH] time_in_run=0m55.62s hold_fill=7/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=7 duration=27.64s
+[BOOST] time_in_run=1m02.14s current_speed=2.27 coord={928,635}
+[LOOP_FAIL] time_in_run=1m02.38s wake_len=380 nearby_fish=8
+[MAP_COVERAGE] run=8 grid_visited=99/400 exploration_ratio=24% farthest_dist_from_spawn=609
+[CRANK_LOG] run=8 total_degrees_turned=7449 average_rpm=19.1 direction_changes=41
+[EXCITEMENT_CRANK] run=8 proximity_rpm=18.9 travel_rpm=20.8 excitement_ratio=90%
+[RUN_PHASE_EFFICIENCY] run=8 first_half_rate=6.27s/fish second_half_rate=11.53s/fish decay_ratio=183%
+[DEAD_CASH] run=8 unspent_wallet=$2 percent_unspent=3% cheapest_available_upgrade=$11
+[FLOW_BUGS] run=8 near_misses=0 target_switches=43 loops_failed=7
+[INDICATOR_SUMMARY] run=8 avg_reaction_time=1.98s total_alignments=170
+[RETURN_DOCK] run=8 duration=1m04.92s fish_sold=7 money_earned=56 boosts_used=11 crashes=1
+[UPGRADE] run=8 upgrade=Line level=12 cost=$26 remaining_wallet=$44 session_elapsed=8m21.24s
+[UPGRADE] run=8 upgrade=Value level=8 cost=$26 remaining_wallet=$18 session_elapsed=8m21.24s
+[UPGRADE] run=8 upgrade=Speed level=3 cost=$11 remaining_wallet=$7 session_elapsed=8m21.24s
+[DEPART_DOCK] run=9 time_in_menu=0m10.98s wallet=7 upgrades={V:8,S:3,L:12,C:0}
+[BOOST] time_in_run=0m04.69s current_speed=1.86 coord={682,1016}
+[CATCH] time_in_run=0m04.88s hold_fill=1/999 fish_size=20 fish_value=$10 multi_catch_bonus=$0 loop_points=253
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=253 waste_ratio=39%
+[BOOST_CATCH] time_in_run=0m04.88s hold_fill=1/999 boost_speed=8.62
+[CHASE_DURATION] fish_id=15 duration=3.12s
+[LOOP_FAIL] time_in_run=0m06.92s wake_len=176 nearby_fish=10
+[COLLISION] time_in_run=0m08.06s impact_speed=2.44 angle_diff=15.8 state=normal
+[COLLISION_CHAIN] chain_length=1 current_speed=2.44 coord={387,1062}
+[BOOST] time_in_run=0m11.62s current_speed=2.44 coord={506,965}
+[CATCH] time_in_run=0m11.72s hold_fill=2/999 fish_size=30 fish_value=$11 multi_catch_bonus=$0 loop_points=203
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=203 waste_ratio=51%
+[BOOST_CATCH] time_in_run=0m11.72s hold_fill=2/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=7 duration=5.26s
+[BOOST] time_in_run=0m15.30s current_speed=2.06 coord={598,873}
+[CATCH] time_in_run=0m15.50s hold_fill=3/999 fish_size=20 fish_value=$10 multi_catch_bonus=$0 loop_points=240
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=240 waste_ratio=42%
+[BOOST_CATCH] time_in_run=0m15.50s hold_fill=3/999 boost_speed=8.36
+[CHASE_DURATION] fish_id=12 duration=3.44s
+[BOOST] time_in_run=0m19.08s current_speed=2.38 coord={569,989}
+[CATCH] time_in_run=0m19.16s hold_fill=4/999 fish_size=40 fish_value=$12 multi_catch_bonus=$0 loop_points=415
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=415 waste_ratio=0%
+[BOOST_CATCH] time_in_run=0m19.16s hold_fill=4/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=9 duration=13.86s
+[BOOST] time_in_run=0m25.24s current_speed=2.31 coord={551,736}
+[CATCH] time_in_run=0m25.36s hold_fill=5/999 fish_size=40 fish_value=$12 multi_catch_bonus=$0 loop_points=385
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=385 waste_ratio=7%
+[BOOST_CATCH] time_in_run=0m25.36s hold_fill=5/999 boost_speed=9.45
+[CHASE_DURATION] fish_id=13 duration=3.58s
+[BOOST] time_in_run=0m28.46s current_speed=2.54 coord={705,588}
+[CATCH] time_in_run=0m28.48s hold_fill=6/999 fish_size=40 fish_value=$12 multi_catch_bonus=$0 loop_points=358
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=358 waste_ratio=14%
+[BOOST_CATCH] time_in_run=0m28.48s hold_fill=6/999 boost_speed=11.00
+[CHASE_DURATION] fish_id=2 duration=5.10s
+[CATCH] time_in_run=0m28.48s hold_fill=7/999 fish_size=20 fish_value=$10 multi_catch_bonus=$0 loop_points=358
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=358 waste_ratio=14%
+[BOOST_CATCH] time_in_run=0m28.48s hold_fill=7/999 boost_speed=11.00
+[CHASE_DURATION] fish_id=10 duration=2.70s
+[BOOST] time_in_run=0m32.82s current_speed=2.44 coord={800,517}
+[LOOP_FAIL] time_in_run=0m34.50s wake_len=15 nearby_fish=6
+[BOOST] time_in_run=0m38.84s current_speed=1.81 coord={821,585}
+[CATCH] time_in_run=0m39.06s hold_fill=8/999 fish_size=30 fish_value=$11 multi_catch_bonus=$0 loop_points=297
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=297 waste_ratio=28%
+[BOOST_CATCH] time_in_run=0m39.06s hold_fill=8/999 boost_speed=8.11
+[CHASE_DURATION] fish_id=5 duration=9.00s
+[BOOST] time_in_run=0m45.72s current_speed=2.34 coord={785,569}
+[CATCH] time_in_run=0m45.78s hold_fill=9/999 fish_size=30 fish_value=$11 multi_catch_bonus=$0 loop_points=406
+[WAKE_WASTE_RATIO] run=9 total_points=418 points_in_loop=406 waste_ratio=2%
+[BOOST_CATCH] time_in_run=0m45.78s hold_fill=9/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=1 duration=19.98s
+[MAP_COVERAGE] run=9 grid_visited=97/400 exploration_ratio=24% farthest_dist_from_spawn=684
+[CRANK_LOG] run=9 total_degrees_turned=5984 average_rpm=21.0 direction_changes=28
+[EXCITEMENT_CRANK] run=9 proximity_rpm=21.4 travel_rpm=19.0 excitement_ratio=112%
+[RUN_PHASE_EFFICIENCY] run=9 first_half_rate=4.79s/fish second_half_rate=5.66s/fish decay_ratio=118%
+[DEAD_CASH] run=9 unspent_wallet=$7 percent_unspent=7% cheapest_available_upgrade=$13
+[FLOW_BUGS] run=9 near_misses=0 target_switches=28 loops_failed=2
+[INDICATOR_SUMMARY] run=9 avg_reaction_time=2.05s total_alignments=132
+[RETURN_DOCK] run=9 duration=0m47.48s fish_sold=9 money_earned=81 boosts_used=9 crashes=1
+[UPGRADE] run=9 upgrade=Value level=9 cost=$31 remaining_wallet=$75 session_elapsed=9m08.71s
+[UPGRADE] run=9 upgrade=Boost level=1 cost=$22 remaining_wallet=$53 session_elapsed=9m08.71s
+[UPGRADE] run=9 upgrade=Value level=10 cost=$36 remaining_wallet=$17 session_elapsed=9m08.71s
+[UPGRADE] run=9 upgrade=Speed level=4 cost=$13 remaining_wallet=$4 session_elapsed=9m08.71s
+[DEPART_DOCK] run=10 time_in_menu=0m09.39s wallet=4 upgrades={V:10,S:4,L:12,C:1}
+[BOOST] time_in_run=0m01.40s current_speed=2.80 coord={780,923}
+[CATCH] time_in_run=0m03.48s hold_fill=1/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=306
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=306 waste_ratio=26%
+[CHASE_DURATION] fish_id=6 duration=1.16s
+[CATCH] time_in_run=0m03.48s hold_fill=2/999 fish_size=40 fish_value=$14 multi_catch_bonus=$0 loop_points=306
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=306 waste_ratio=26%
+[CHASE_DURATION] fish_id=15 duration=1.92s
+[CATCH] time_in_run=0m07.20s hold_fill=3/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=328
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=328 waste_ratio=21%
+[CHASE_DURATION] fish_id=10 duration=2.92s
+[CATCH] time_in_run=0m07.20s hold_fill=4/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=328
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=328 waste_ratio=21%
+[CHASE_DURATION] fish_id=11 duration=2.04s
+[BOOST] time_in_run=0m07.96s current_speed=2.55 coord={506,922}
+[BOOST] time_in_run=0m13.20s current_speed=2.63 coord={730,726}
+[BOOST] time_in_run=0m18.02s current_speed=2.60 coord={765,739}
+[CATCH] time_in_run=0m18.28s hold_fill=5/999 fish_size=30 fish_value=$13 multi_catch_bonus=$0 loop_points=400
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=400 waste_ratio=4%
+[BOOST_CATCH] time_in_run=0m18.28s hold_fill=5/999 boost_speed=7.63
+[CHASE_DURATION] fish_id=5 duration=9.42s
+[LOOP_FAIL] time_in_run=0m21.58s wake_len=257 nearby_fish=10
+[BOOST] time_in_run=0m23.02s current_speed=2.58 coord={605,545}
+[LOOP_FAIL] time_in_run=0m23.14s wake_len=207 nearby_fish=10
+[BOOST] time_in_run=0m26.66s current_speed=2.48 coord={377,661}
+[CATCH] time_in_run=0m26.82s hold_fill=6/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=261
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=261 waste_ratio=37%
+[BOOST_CATCH] time_in_run=0m26.82s hold_fill=6/999 boost_speed=8.89
+[CHASE_DURATION] fish_id=7 duration=8.08s
+[COLLISION] time_in_run=0m27.08s impact_speed=5.98 angle_diff=6.4 state=boosting
+[LOOP_FAIL] time_in_run=0m27.78s wake_len=15 nearby_fish=8
+[BOOST] time_in_run=0m33.56s current_speed=2.55 coord={755,728}
+[CATCH] time_in_run=0m33.70s hold_fill=7/999 fish_size=10 fish_value=$11 multi_catch_bonus=$0 loop_points=291
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=291 waste_ratio=30%
+[BOOST_CATCH] time_in_run=0m33.70s hold_fill=7/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=2 duration=24.36s
+[CATCH] time_in_run=0m33.70s hold_fill=8/999 fish_size=10 fish_value=$11 multi_catch_bonus=$0 loop_points=291
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=291 waste_ratio=30%
+[BOOST_CATCH] time_in_run=0m33.70s hold_fill=8/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=4 duration=22.94s
+[LOOP_FAIL] time_in_run=0m36.66s wake_len=214 nearby_fish=4
+[BOOST] time_in_run=0m38.54s current_speed=2.54 coord={936,558}
+[CATCH] time_in_run=0m38.62s hold_fill=9/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=267
+[WAKE_WASTE_RATIO] run=10 total_points=317 points_in_loop=267 waste_ratio=15%
+[BOOST_CATCH] time_in_run=0m38.62s hold_fill=9/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=13 duration=3.90s
+[BOOST] time_in_run=0m42.38s current_speed=1.85 coord={743,791}
+[CATCH] time_in_run=0m42.58s hold_fill=10/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=276
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=276 waste_ratio=33%
+[BOOST_CATCH] time_in_run=0m42.58s hold_fill=10/999 boost_speed=8.36
+[CHASE_DURATION] fish_id=3 duration=31.14s
+[BOOST] time_in_run=0m47.40s current_speed=2.57 coord={511,655}
+[CATCH] time_in_run=0m47.48s hold_fill=11/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=309
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=309 waste_ratio=26%
+[BOOST_CATCH] time_in_run=0m47.48s hold_fill=11/999 boost_speed=10.04
+[CHASE_DURATION] fish_id=14 duration=40.26s
+[CATCH] time_in_run=0m49.72s hold_fill=12/999 fish_size=20 fish_value=$12 multi_catch_bonus=$0 loop_points=300
+[WAKE_WASTE_RATIO] run=10 total_points=418 points_in_loop=300 waste_ratio=28%
+[CHASE_DURATION] fish_id=12 duration=40.76s
+[BOOST] time_in_run=0m51.16s current_speed=2.79 coord={472,600}
+[MAP_COVERAGE] run=10 grid_visited=112/400 exploration_ratio=28% farthest_dist_from_spawn=745
+[CRANK_LOG] run=10 total_degrees_turned=6374 average_rpm=20.7 direction_changes=26
+[EXCITEMENT_CRANK] run=10 proximity_rpm=21.0 travel_rpm=19.7 excitement_ratio=106%
+[RUN_PHASE_EFFICIENCY] run=10 first_half_rate=4.47s/fish second_half_rate=4.08s/fish decay_ratio=91%
+[DEAD_CASH] run=10 unspent_wallet=$4 percent_unspent=2% cheapest_available_upgrade=$16
+[FLOW_BUGS] run=10 near_misses=0 target_switches=32 loops_failed=4
+[INDICATOR_SUMMARY] run=10 avg_reaction_time=1.95s total_alignments=116
+[RETURN_DOCK] run=10 duration=0m51.28s fish_sold=12 money_earned=132 boosts_used=11 crashes=1
+[UPGRADE] run=10 upgrade=Value level=11 cost=$41 remaining_wallet=$108 session_elapsed=10m00.00s
+[UPGRADE] run=10 upgrade=Value level=12 cost=$48 remaining_wallet=$60 session_elapsed=10m00.00s
+[UPGRADE] run=10 upgrade=Speed level=5 cost=$16 remaining_wallet=$44 session_elapsed=10m00.00s
+[UPGRADE] run=10 upgrade=Speed level=6 cost=$19 remaining_wallet=$25 session_elapsed=10m00.00s
+[UPGRADE] run=10 upgrade=Speed level=7 cost=$22 remaining_wallet=$3 session_elapsed=10m00.00s
+[DEPART_DOCK] run=11 time_in_menu=0m14.80s wallet=3 upgrades={V:12,S:7,L:12,C:1}
+[CATCH] time_in_run=0m03.62s hold_fill=1/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=408
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=408 waste_ratio=2%
+[BOOST_CATCH] time_in_run=0m03.62s hold_fill=1/999 boost_speed=3.58
+[CHASE_DURATION] fish_id=1 duration=3.38s
+[CATCH] time_in_run=0m03.62s hold_fill=2/999 fish_size=10 fish_value=$13 multi_catch_bonus=$0 loop_points=408
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=408 waste_ratio=2%
+[BOOST_CATCH] time_in_run=0m03.62s hold_fill=2/999 boost_speed=3.58
+[CHASE_DURATION] fish_id=2 duration=3.60s
+[CATCH] time_in_run=0m07.12s hold_fill=3/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=309
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=309 waste_ratio=26%
+[BOOST_CATCH] time_in_run=0m07.12s hold_fill=3/999 boost_speed=3.36
+[CHASE_DURATION] fish_id=10 duration=2.12s
+[CATCH] time_in_run=0m09.97s hold_fill=4/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=356
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=356 waste_ratio=14%
+[BOOST_CATCH] time_in_run=0m09.97s hold_fill=4/999 boost_speed=3.54
+[CHASE_DURATION] fish_id=6 duration=2.84s
+[BOOST] time_in_run=0m12.40s current_speed=3.38 coord={521,833}
+[CATCH] time_in_run=0m12.54s hold_fill=5/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=251
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=251 waste_ratio=39%
+[BOOST_CATCH] time_in_run=0m12.54s hold_fill=5/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=4 duration=0.48s
+[CATCH] time_in_run=0m12.54s hold_fill=6/999 fish_size=40 fish_value=$16 multi_catch_bonus=$0 loop_points=251
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=251 waste_ratio=39%
+[BOOST_CATCH] time_in_run=0m12.54s hold_fill=6/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=7 duration=2.40s
+[CATCH] time_in_run=0m12.54s hold_fill=7/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=251
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=251 waste_ratio=39%
+[BOOST_CATCH] time_in_run=0m12.54s hold_fill=7/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=9 duration=1.22s
+[CATCH] time_in_run=0m14.74s hold_fill=8/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=256
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=256 waste_ratio=38%
+[CHASE_DURATION] fish_id=14 duration=1.86s
+[CATCH] time_in_run=0m17.44s hold_fill=9/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=304
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=304 waste_ratio=27%
+[CHASE_DURATION] fish_id=8 duration=7.26s
+[BOOST] time_in_run=0m18.18s current_speed=3.51 coord={512,935}
+[LOOP_FAIL] time_in_run=0m20.28s wake_len=417 nearby_fish=6
+[BOOST] time_in_run=0m22.12s current_speed=3.06 coord={596,877}
+[CATCH] time_in_run=0m22.26s hold_fill=10/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=305
+[WAKE_WASTE_RATIO] run=11 total_points=403 points_in_loop=305 waste_ratio=24%
+[BOOST_CATCH] time_in_run=0m22.26s hold_fill=10/999 boost_speed=9.16
+[CHASE_DURATION] fish_id=5 duration=13.78s
+[BOOST] time_in_run=0m25.10s current_speed=3.52 coord={856,986}
+[CATCH] time_in_run=0m25.16s hold_fill=11/999 fish_size=40 fish_value=$16 multi_catch_bonus=$0 loop_points=314
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=314 waste_ratio=24%
+[BOOST_CATCH] time_in_run=0m25.16s hold_fill=11/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=13 duration=24.40s
+[COLLISION] time_in_run=0m25.60s impact_speed=5.30 angle_diff=41.3 state=boosting
+[COLLISION_CHAIN] chain_length=1 current_speed=5.30 coord={1024,913}
+[LOOP_FAIL] time_in_run=0m26.14s wake_len=15 nearby_fish=2
+[LOOP_FAIL] time_in_run=0m26.36s wake_len=15 nearby_fish=2
+[BOOST] time_in_run=0m28.14s current_speed=3.22 coord={967,1055}
+[CATCH] time_in_run=0m28.24s hold_fill=12/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=211
+[WAKE_WASTE_RATIO] run=11 total_points=358 points_in_loop=211 waste_ratio=41%
+[BOOST_CATCH] time_in_run=0m28.24s hold_fill=12/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=11 duration=24.46s
+[COLLISION] time_in_run=0m28.26s impact_speed=9.45 angle_diff=6.9 state=boosting
+[LOOP_FAIL] time_in_run=0m28.88s wake_len=15 nearby_fish=2
+[LOOP_FAIL] time_in_run=0m29.06s wake_len=15 nearby_fish=2
+[BOOST] time_in_run=0m34.08s current_speed=3.28 coord={405,898}
+[CATCH] time_in_run=0m34.28s hold_fill=13/999 fish_size=20 fish_value=$14 multi_catch_bonus=$0 loop_points=350
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=350 waste_ratio=16%
+[BOOST_CATCH] time_in_run=0m34.28s hold_fill=13/999 boost_speed=8.36
+[CHASE_DURATION] fish_id=12 duration=16.48s
+[LOOP_FAIL] time_in_run=0m38.93s wake_len=245 nearby_fish=1
+[LOOP_FAIL] time_in_run=0m41.86s wake_len=296 nearby_fish=1
+[BOOST] time_in_run=0m43.42s current_speed=3.23 coord={481,461}
+[LOOP_FAIL] time_in_run=0m43.56s wake_len=245 nearby_fish=1
+[BOOST] time_in_run=0m49.90s current_speed=3.52 coord={946,970}
+[CATCH] time_in_run=0m49.96s hold_fill=14/999 fish_size=10 fish_value=$13 multi_catch_bonus=$0 loop_points=206
+[WAKE_WASTE_RATIO] run=11 total_points=418 points_in_loop=206 waste_ratio=50%
+[BOOST_CATCH] time_in_run=0m49.96s hold_fill=14/999 boost_speed=10.35
+[CHASE_DURATION] fish_id=3 duration=48.22s
+[MAP_COVERAGE] run=11 grid_visited=119/400 exploration_ratio=29% farthest_dist_from_spawn=793
+[CRANK_LOG] run=11 total_degrees_turned=8082 average_rpm=26.3 direction_changes=38
+[EXCITEMENT_CRANK] run=11 proximity_rpm=30.3 travel_rpm=18.5 excitement_ratio=163%
+[RUN_PHASE_EFFICIENCY] run=11 first_half_rate=1.79s/fish second_half_rate=5.54s/fish decay_ratio=309%
+[DEAD_CASH] run=11 unspent_wallet=$3 percent_unspent=1% cheapest_available_upgrade=$26
+[FLOW_BUGS] run=11 near_misses=0 target_switches=21 loops_failed=8
+[INDICATOR_SUMMARY] run=11 avg_reaction_time=1.57s total_alignments=109
+[RETURN_DOCK] run=11 duration=0m51.30s fish_sold=14 money_earned=182 boosts_used=8 crashes=2
+[UPGRADE] run=11 upgrade=Value level=13 cost=$103 remaining_wallet=$98 session_elapsed=10m51.30s
+[UPGRADE] run=11 upgrade=Speed level=8 cost=$26 remaining_wallet=$72 session_elapsed=10m51.30s
+[UPGRADE] run=11 upgrade=Speed level=9 cost=$31 remaining_wallet=$41 session_elapsed=10m51.30s
+[UPGRADE] run=11 upgrade=Speed level=10 cost=$36 remaining_wallet=$5 session_elapsed=10m51.30s
+[DEPART_DOCK] run=12 time_in_menu=0m15.68s wallet=5 upgrades={V:13,S:10,L:12,C:1}
+[CATCH] time_in_run=0m03.80s hold_fill=1/999 fish_size=10 fish_value=$14 multi_catch_bonus=$0 loop_points=356
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=356 waste_ratio=14%
+[BOOST_CATCH] time_in_run=0m03.80s hold_fill=1/999 boost_speed=2.37
+[CHASE_DURATION] fish_id=5 duration=2.66s
+[CATCH] time_in_run=0m07.10s hold_fill=2/999 fish_size=20 fish_value=$15 multi_catch_bonus=$0 loop_points=417
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=417 waste_ratio=0%
+[BOOST_CATCH] time_in_run=0m07.10s hold_fill=2/999 boost_speed=4.35
+[CHASE_DURATION] fish_id=15 duration=2.24s
+[BOOST] time_in_run=0m09.24s current_speed=4.14 coord={505,954}
+[CATCH] time_in_run=0m09.28s hold_fill=3/999 fish_size=20 fish_value=$15 multi_catch_bonus=$0 loop_points=280
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=280 waste_ratio=33%
+[BOOST_CATCH] time_in_run=0m09.28s hold_fill=3/999 boost_speed=10.67
+[CHASE_DURATION] fish_id=13 duration=1.72s
+[BOOST] time_in_run=0m13.84s current_speed=4.22 coord={615,634}
+[BOOST] time_in_run=0m16.76s current_speed=4.13 coord={770,648}
+[CATCH] time_in_run=0m16.86s hold_fill=4/999 fish_size=30 fish_value=$16 multi_catch_bonus=$0 loop_points=386
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=386 waste_ratio=7%
+[BOOST_CATCH] time_in_run=0m16.86s hold_fill=4/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=7 duration=1.66s
+[CATCH] time_in_run=0m16.86s hold_fill=5/999 fish_size=40 fish_value=$17 multi_catch_bonus=$0 loop_points=386
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=386 waste_ratio=7%
+[BOOST_CATCH] time_in_run=0m16.86s hold_fill=5/999 boost_speed=9.74
+[CHASE_DURATION] fish_id=8 duration=4.48s
+[CATCH] time_in_run=0m18.90s hold_fill=6/999 fish_size=20 fish_value=$15 multi_catch_bonus=$0 loop_points=361
+[WAKE_WASTE_RATIO] run=12 total_points=418 points_in_loop=361 waste_ratio=13%
+[CHASE_DURATION] fish_id=10 duration=1.88s
+[BOO
+<truncated 72200 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.
