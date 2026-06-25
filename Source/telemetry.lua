@@ -47,6 +47,9 @@ Telemetry = {
     catchFrames = {},
     loopsFailed = 0,
     stuckStartFrame = nil,
+    stuckCount = 0,
+    totalStuckTime = 0,
+    indicatorReactions = {},
 }
 
 local function formatTime(frames)
@@ -87,6 +90,9 @@ function Telemetry.logDepartDock()
     Telemetry.catchFrames = {}
     Telemetry.loopsFailed = 0
     Telemetry.stuckStartFrame = nil
+    Telemetry.stuckCount = 0
+    Telemetry.totalStuckTime = 0
+    Telemetry.indicatorReactions = {}
     
     Telemetry.runNumber = State.totalRunsPlayed + 1
     
@@ -168,9 +174,28 @@ function Telemetry.logReturnDock(fishSold, moneyEarned)
     -- Return Dock Summary
     local avgSpeed = 0
     if Telemetry.runFrames > 0 then
-        -- Total speed accumulated / frames
         avgSpeed = State.boat.currentSpeed -- Simple representation
     end
+    
+    -- Print Stuck Recovery summary
+    if Telemetry.stuckCount > 0 then
+        print(string.format("[STUCK_SUMMARY] run=%d stuck_recoveries=%d total_stuck_duration=%.2fs", 
+            Telemetry.runNumber, Telemetry.stuckCount, Telemetry.totalStuckTime))
+    end
+    
+    -- Print Target switches and near-misses
+    print(string.format("[FLOW_BUGS] run=%d near_misses=%d target_switches=%d loops_failed=%d", 
+        Telemetry.runNumber, Telemetry.nearMissesCount, Telemetry.targetSwitchCount, Telemetry.loopsFailed))
+        
+    -- Print Indicator reactions average
+    local avgReaction = 0
+    if #Telemetry.indicatorReactions > 0 then
+        local sum = 0
+        for _, r in ipairs(Telemetry.indicatorReactions) do sum = sum + r end
+        avgReaction = sum / #Telemetry.indicatorReactions
+    end
+    print(string.format("[INDICATOR_SUMMARY] run=%d avg_reaction_time=%.2fs total_alignments=%d", 
+        Telemetry.runNumber, avgReaction, #Telemetry.indicatorReactions))
     
     print(string.format("[RETURN_DOCK] run=%d duration=%s fish_sold=%d money_earned=%d boosts_used=%d crashes=%d", 
         Telemetry.runNumber, durationStr, fishSold, moneyEarned, Telemetry.boostsUsed, Telemetry.collisions))
@@ -248,8 +273,8 @@ function Telemetry.logCollision(impactSpeed, angleDiff, isBoosting)
 end
 
 function Telemetry.logStuck(durationSecs)
-    print(string.format("[STUCK_RECOVERY] duration=%.2fs coord={%.0f,%.0f}", 
-        durationSecs, State.boat.x, State.boat.y))
+    Telemetry.stuckCount = Telemetry.stuckCount + 1
+    Telemetry.totalStuckTime = Telemetry.totalStuckTime + durationSecs
 end
 
 function Telemetry.logUpgrade(name, newLvl, cost, wallet)
@@ -300,11 +325,19 @@ function Telemetry.update()
             
             -- EXCITEMENT CRANK tracking
             local closeToFish = false
+            local closestFishIdx = nil
+            local closestFishDist = 9999
+            
             for idx, f in ipairs(State.fish) do
                 if f.alive then
                     local fdist = math.sqrt((bx - f.x)^2 + (by - f.y)^2)
                     if fdist < 100 then
                         closeToFish = true
+                    end
+                    
+                    if fdist < 120 and fdist < closestFishDist then
+                        closestFishDist = fdist
+                        closestFishIdx = idx
                     end
                     
                     -- Track off-screen indicators appearance
@@ -316,43 +349,35 @@ function Telemetry.update()
                         end
                         
                         -- Track indicator reaction times
-                        -- If the boat moves closer to aligning heading with the target
                         local targetAngle = math.deg(math.atan2(dy, dx)) + 90
                         local headingDiff = math.abs((State.boat.angle - targetAngle + 180) % 360 - 180)
                         if headingDiff < 20 and Telemetry.indicatorAppearFrames[idx] then
                             local reaction = (Telemetry.runFrames - Telemetry.indicatorAppearFrames[idx]) / Config.RefreshRate
-                            if reaction > 0.2 and reaction < 10.0 then -- Ignore instant alignments
-                                print(string.format("[INDICATOR_REACTION] indicator_heading=%.1f initial_boat_heading=%.1f turn_reaction_time=%.2fs", 
-                                    targetAngle, State.boat.angle, reaction))
+                            if reaction > 0.2 and reaction < 10.0 then
+                                table.insert(Telemetry.indicatorReactions, reaction)
                             end
                             Telemetry.indicatorAppearFrames[idx] = nil
                         end
                     else
                         Telemetry.indicatorAppearFrames[idx] = nil
                     end
-                    
-                    -- Track fish chases
-                    if fdist < 120 then
-                        if not Telemetry.chaseStartFrames[idx] then
-                            Telemetry.chaseStartFrames[idx] = Telemetry.runFrames
-                        end
-                        
-                        -- Target switching check
-                        if Telemetry.activeChaseTarget == nil then
-                            Telemetry.activeChaseTarget = idx
-                        elseif Telemetry.activeChaseTarget ~= idx and fdist < 60 then
-                            -- Player got very close to this new fish instead of original target
-                            Telemetry.targetSwitchCount = Telemetry.targetSwitchCount + 1
-                            print(string.format("[TARGET_SWITCH] time_in_run=%s distance_from_first=%.1f", 
-                                formatTime(Telemetry.runFrames), fdist))
-                            Telemetry.activeChaseTarget = idx
-                        end
-                    else
-                        if Telemetry.activeChaseTarget == idx then
-                            Telemetry.activeChaseTarget = nil
-                        end
-                    end
                 end
+            end
+            
+            -- Track fish chases and target switching (evaluated once per frame after loop)
+            if closestFishIdx then
+                if not Telemetry.chaseStartFrames[closestFishIdx] then
+                    Telemetry.chaseStartFrames[closestFishIdx] = Telemetry.runFrames
+                end
+                
+                if Telemetry.activeChaseTarget == nil then
+                    Telemetry.activeChaseTarget = closestFishIdx
+                elseif Telemetry.activeChaseTarget ~= closestFishIdx and closestFishDist < 60 then
+                    Telemetry.targetSwitchCount = Telemetry.targetSwitchCount + 1
+                    Telemetry.activeChaseTarget = closestFishIdx
+                end
+            else
+                Telemetry.activeChaseTarget = nil
             end
             
             if closeToFish then
@@ -395,11 +420,8 @@ function Telemetry.update()
                     end
                 else
                     if Telemetry.inNearMissRange then
-                        -- We were near, now we are safe without crashing! Log near miss!
+                        -- We were near, now we are safe without crashing! Increment near miss
                         Telemetry.nearMissesCount = Telemetry.nearMissesCount + 1
-                        local runTimeStr = formatTime(Telemetry.runFrames)
-                        print(string.format("[NEAR_MISS] time_in_run=%s speed=%.2f distance_to_wall=%.1f", 
-                            runTimeStr, speed, Telemetry.minNearMissDist))
                         Telemetry.inNearMissRange = false
                     end
                 end
