@@ -1,9 +1,9 @@
 import "state"
 import "config"
 
-function pointInPolygon(px, py, poly)
+function pointInPolygon(px, py, poly, n)
+    n = n or #poly
     local inside = false
-    local n = #poly
     local j = n
     for i = 1, n do
         local xi, yi = poly[i].wx, poly[i].wy
@@ -312,16 +312,19 @@ function updatePhysics()
     local sternOffset = 12 -- Distance from center to stern in the 40x40 sprite
     local sternWx = boat.x - dirX * sternOffset
     local sternWy = boat.y - dirY * sternOffset
+    boat.sternX = sternWx
+    boat.sternY = sternWy
     local right_wx =  dirY
     local right_wy = -dirX
 
     local wake = State.wake
-    local wakeMax = math.floor(Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1))
+    local wakeMax = math.floor((Config.WakeMaxLength * (1 + State.upgrades[3].level * 0.1)) / Config.WakeSegmentLength)
 
     if boat.bounceFrames <= 0 and not isStuck then
         if #wake == 0 then
             local p = table.remove(State.wakePool) or {}
             p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
+            p.angle = State.boat.angle
             table.insert(wake, 1, p)
         else
             local prev = wake[1]
@@ -329,25 +332,23 @@ function updatePhysics()
             local dy = sternWy - prev.wy
             local dist = math.sqrt(dx * dx + dy * dy)
             
-            -- If we've moved significantly, fill the gap with 1px segments
-            if dist >= 1 then
-                local steps = math.floor(dist)
-                local ux, uy = dx / dist, dy / dist
+            local angleDiff = 0
+            if prev.angle then
+                angleDiff = math.abs(State.boat.angle - prev.angle)
+                angleDiff = angleDiff % 360
+                if angleDiff > 180 then angleDiff = 360 - angleDiff end
+            end
+            
+            -- Insert point if we moved by segment length OR turned significantly
+            if dist >= Config.WakeSegmentLength or (dist >= 1.5 and angleDiff >= 5) then
+                local p = table.remove(State.wakePool) or {}
+                p.wx, p.wy, p.rx, p.ry = sternWx, sternWy, right_wx, right_wy
+                p.angle = State.boat.angle
+                table.insert(wake, 1, p)
                 
-                for i = 1, steps do
-                    local p = table.remove(State.wakePool) or {}
-                    -- Interpolate along the path
-                    p.wx = prev.wx + ux * i
-                    p.wy = prev.wy + uy * i
-                    p.rx, p.ry = right_wx, right_wy
-                    
-                    table.insert(wake, 1, p)
-                    
-                    -- Enforce the tail limit inside the loop
-                    if #wake > wakeMax then
-                        local removed = table.remove(wake)
-                        table.insert(State.wakePool, removed)
-                    end
+                if #wake > wakeMax then
+                    local removed = table.remove(wake)
+                    table.insert(State.wakePool, removed)
                 end
             end
         end
@@ -362,20 +363,14 @@ function updatePhysics()
     end
 
     -- Loop detection: if stern gets close to an older wake point, catch fish inside
-    if #wake >= Config.Catch.minLoopLength then
-        local head = wake[1]
+    local minLoopIdx = math.ceil(Config.Catch.minLoopLength / Config.WakeSegmentLength)
+    if #wake >= minLoopIdx then
         local threshSq = Config.Catch.closeThreshold * Config.Catch.closeThreshold
-        for i = Config.Catch.minLoopLength, #wake do
+        for i = minLoopIdx, #wake do
             local p = wake[i]
-            local ddx = head.wx - p.wx
-            local ddy = head.wy - p.wy
+            local ddx = sternWx - p.wx
+            local ddy = sternWy - p.wy
             if ddx * ddx + ddy * ddy <= threshSq then
-                -- Build polygon from the closed portion of the wake
-                local poly = {}
-                for j = 1, i do
-                    poly[j] = wake[j]
-                end
-
                 -- Broadphase: Calculate bounding box of the closed loop
                 local minX, maxX = wake[1].wx, wake[1].wx
                 local minY, maxY = wake[1].wy, wake[1].wy
@@ -411,7 +406,7 @@ function updatePhysics()
                             
                             local pointsInside = 0
                             for p = 1, 5 do
-                                if pointInPolygon(points[p][1], points[p][2], poly) then
+                                if pointInPolygon(points[p][1], points[p][2], wake, i) then
                                     pointsInside = pointsInside + 1
                                 end
                             end

@@ -23,5 +23,6 @@ Config = {
     },
     Obstacles = {},
     WakeMaxLength = 190,
+    WakeSegmentLength = 5,
     RefreshRate = 50,
 }

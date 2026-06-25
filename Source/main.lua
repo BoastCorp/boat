@@ -144,8 +144,10 @@ local function drawContent()
 
     -- Draw wake
     local wake = State.wake
-    if #wake >= 2 then
+    if #wake >= 1 then
         gfx.setColor(uiColor)
+        local sx, sy = State.boat.sternX or bx, State.boat.sternY or by
+        gfx.drawLine(200 + (sx - bx), 120 + (sy - by), 200 + (wake[1].wx - bx), 120 + (wake[1].wy - by))
         for i = 1, #wake - 1 do
             local p1 = wake[i]
             local p2 = wake[i + 1]
