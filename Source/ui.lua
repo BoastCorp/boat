@@ -77,26 +77,52 @@ end
 
 function drawDockScreen()
     gfx.clear(gfx.kColorBlack)
-    gfx.setImageDrawMode(gfx.kDrawModeInverted)
-    if dockImage then
-        dockImage:draw(0, 0)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    if littleguymenubImage then
+        local w, h = littleguymenubImage:getSize()
+        local x = 400 - w
+        local y = 240 - h
+        littleguymenubImage:draw(x, y)
+        if textboxImage then
+            local tbW, tbH = textboxImage:getSize()
+            local tbX = 400 - tbW
+            local tbY = y - tbH
+            textboxImage:draw(tbX, tbY)
+        end
     else
         gfx.drawText("DOCK (Image missing)", 100, 100)
     end
 
-    -- Draw simple menu instructions at the bottom
+    -- Draw list menu on the left side
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-    gfx.setFont(roobert11)
-    gfx.drawText("▲ Play    ◀ Upgrades    ▶ Soundtrack", 75, 222)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.setFont(roobert24)
+    
+    local menuX = 50
+    local menuY = 60
+    local spacing = 45
+    local menuItems = { "Play", "Upgrades", "Soundtrack" }
+    
+    for i, item in ipairs(menuItems) do
+        local itemY = menuY + (i - 1) * spacing
+        if i == State.dockMenuIndex then
+            -- Draw vector triangle pointing right next to selected item
+            local arrowX = menuX - 20
+            local arrowY = itemY + 8
+            gfx.fillTriangle(arrowX, arrowY, arrowX + 8, arrowY + 5, arrowX, arrowY + 10)
+        end
+        gfx.drawText(item, menuX, itemY)
+    end
+
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.setFont(nil)
 end
 
 
 function drawUpgradeScreen()
-    gfx.clear(gfx.kColorWhite)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.clear(gfx.kColorBlack)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 
     -- Wallet footer (more visually pleasing at bottom)
     gfx.drawLine(0, 210, 400, 210)
@@ -120,14 +146,14 @@ function drawUpgradeScreen()
 
         -- Draw box
         if isSelected then
-            gfx.setColor(gfx.kColorBlack)
-            gfx.fillRect(x, y, cellW, cellH)
             gfx.setColor(gfx.kColorWhite)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        else
+            gfx.fillRect(x, y, cellW, cellH)
             gfx.setColor(gfx.kColorBlack)
+            gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
+        else
+            gfx.setColor(gfx.kColorWhite)
             gfx.drawRect(x, y, cellW, cellH)
-            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         end
 
         -- Name (using small font roobert11 to prevent overflow on 90px cells)
@@ -139,9 +165,9 @@ function drawUpgradeScreen()
         
         -- Set shape drawing color to match the box selection state
         if isSelected then
-            gfx.setColor(gfx.kColorWhite)
-        else
             gfx.setColor(gfx.kColorBlack)
+        else
+            gfx.setColor(gfx.kColorWhite)
         end
         
         -- Draw graphical progress bar
@@ -190,9 +216,9 @@ function drawUpgradeScreen()
 end
 
 function drawMusicScreen()
-    gfx.clear(gfx.kColorWhite)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    gfx.clear(gfx.kColorBlack)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 
     -- Header
     gfx.setFont(roobert24)
@@ -224,7 +250,9 @@ function drawMusicScreen()
 
         -- Draw Tape (Full size 75x74)
         if tapeImage then
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
             tapeImage:draw(x, y)
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         else
             gfx.drawRect(x, y, tapeW, tapeH)
             gfx.drawText("TAPE " .. i, x + 5, y + 25)

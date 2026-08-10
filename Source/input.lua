@@ -68,12 +68,26 @@ end
 
 function handleDockInput()
     if playdate.buttonJustPressed(playdate.kButtonUp) then
-        resetRound()
-        State.currentScreen = "game"
-    elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
-        State.currentScreen = "upgrade"
-    elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-        State.currentScreen = "music"
+        if State.dockMenuIndex > 1 then
+            State.dockMenuIndex = State.dockMenuIndex - 1
+        else
+            State.dockMenuIndex = 3
+        end
+    elseif playdate.buttonJustPressed(playdate.kButtonDown) then
+        if State.dockMenuIndex < 3 then
+            State.dockMenuIndex = State.dockMenuIndex + 1
+        else
+            State.dockMenuIndex = 1
+        end
+    elseif playdate.buttonJustPressed(playdate.kButtonA) then
+        if State.dockMenuIndex == 1 then
+            resetRound()
+            State.currentScreen = "game"
+        elseif State.dockMenuIndex == 2 then
+            State.currentScreen = "upgrade"
+        elseif State.dockMenuIndex == 3 then
+            State.currentScreen = "music"
+        end
     end
 end
 

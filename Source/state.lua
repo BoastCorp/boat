@@ -46,6 +46,7 @@ State = {
     selectedUpgrade = 1,
     selectedMusic = 1,          -- Currently active track
     musicSelectionIndex = 1,    -- Cursor position in music menu
+    dockMenuIndex = 1,          -- Selected index on the dock menu (1=Play, 2=Upgrades, 3=Soundtrack)
     debugEnabled = false,
     debugSelectedUpgrade = 1,
     -- Secret Menu State

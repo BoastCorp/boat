@@ -32,9 +32,10 @@ levelCollisionImage = gfx.image.new('images/level/2-collision')
 
 
 
-dockImage = gfx.image.new('images/level/dock-splash')
+littleguymenubImage = gfx.image.new('images/fish/littleguymenub')
 dockObjectImage = gfx.image.new('images/fish/littleguy')
-tapeImage = gfx.image.new('images/menu/tape')
+tapeImage = gfx.image.new('images/menu/tape_invert')
+textboxImage = gfx.image.new('images/menu/textbox')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
