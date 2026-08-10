@@ -87,95 +87,11 @@ function drawDockScreen()
     -- Draw simple menu instructions at the bottom
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.setFont(roobert11)
-    gfx.drawText("▲ Play    ▼ Level    ◀ Upgrades    ▶ Soundtrack", 60, 222)
+    gfx.drawText("▲ Play    ◀ Upgrades    ▶ Soundtrack", 75, 222)
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.setFont(nil)
 end
 
-function drawLevelSelectScreen()
-    gfx.clear(gfx.kColorWhite)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-
-    -- Header
-    gfx.setFont(roobert24)
-    gfx.drawText("SELECT LEVEL", 120, 15)
-    gfx.drawLine(0, 48, 400, 48)
-
-    -- Level options
-    local startY = 70
-    local itemHeight = 45
-    local width = 260
-    local startX = (400 - width) / 2
-
-    for lvl = 1, 2 do
-        local y = startY + (lvl - 1) * (itemHeight + 15)
-        local isSelected = (State.currentLevel == lvl)
-
-        if isSelected then
-            gfx.setColor(gfx.kColorBlack)
-            gfx.fillRect(startX, y, width, itemHeight)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        else
-            gfx.setColor(gfx.kColorBlack)
-            gfx.drawRect(startX, y, width, itemHeight)
-            gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        end
-
-        gfx.setFont(roobert24)
-        local text = "LEVEL " .. lvl
-        local textW = roobert24:getTextWidth(text)
-        gfx.drawText(text, startX + (width - textW) / 2, y + 10)
-    end
-
-    -- Footer
-    gfx.drawLine(0, 210, 400, 210)
-    gfx.setFont(roobert11)
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    gfx.drawText("U/D: Select Level   A/B: Confirm & Back", 95, 218)
-    
-    if State.showUnlockPrompt then
-        local boxW = 280
-        local boxH = 130
-        local boxX = (400 - boxW) / 2
-        local boxY = (240 - boxH) / 2
-
-        -- Background
-        gfx.setColor(gfx.kColorBlack)
-        gfx.fillRect(boxX, boxY, boxW, boxH)
-        
-        -- Border
-        gfx.setColor(gfx.kColorWhite)
-        gfx.setLineWidth(2)
-        gfx.drawRect(boxX, boxY, boxW, boxH)
-        
-        -- Text drawing (white text on black background)
-        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        
-        gfx.setFont(roobert24)
-        local title = "UNLOCK LEVEL 2?"
-        local titleW = roobert24:getTextWidth(title)
-        gfx.drawText(title, boxX + (boxW - titleW) / 2, boxY + 15)
-        
-        gfx.setFont(roobert11)
-        local costText = "Cost: $250 (Current Wallet: $" .. State.money .. ")"
-        local costTextW = roobert11:getTextWidth(costText)
-        gfx.drawText(costText, boxX + (boxW - costTextW) / 2, boxY + 55)
-        
-        local actionText = ""
-        if State.money >= 250 then
-            actionText = "A: Purchase     B: Cancel"
-        else
-            actionText = "NOT ENOUGH CASH!     B: Cancel"
-        end
-        local actionTextW = roobert11:getTextWidth(actionText)
-        gfx.drawText(actionText, boxX + (boxW - actionTextW) / 2, boxY + 90)
-    end
-    
-    gfx.setLineWidth(1)
-    gfx.setFont(nil)
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-end
 
 function drawUpgradeScreen()
     gfx.clear(gfx.kColorWhite)
@@ -189,22 +105,18 @@ function drawUpgradeScreen()
     gfx.setFont(roobert11)
     gfx.drawText("D-Pad: Select   A: Buy Upgrade   B: Back", 140, 218)
 
-    -- Grid logic (4x2)
+    -- Single Row Logic (4 upgrades)
     local cellW = 90
     local cellH = 80
     local colSpacing = 8
-    local rowSpacing = 15
     local startX = (400 - (4 * cellW + 3 * colSpacing)) / 2  -- 8px padding on sides
-    local startY = 15
+    local startY = 65  -- Centered vertically in the 210px space
 
     for i, upgrade in ipairs(State.upgrades) do
-        local col = (i - 1) % 4
-        local row = math.floor((i - 1) / 4)
-        local x = startX + col * (cellW + colSpacing)
-        local y = startY + row * (cellH + rowSpacing)
+        local x = startX + (i - 1) * (cellW + colSpacing)
+        local y = startY
 
         local isSelected = (i == State.selectedUpgrade)
-        local locked = isUpgradeLocked(i)
 
         -- Draw box
         if isSelected then
@@ -261,31 +173,15 @@ function drawUpgradeScreen()
             end
         end
 
-        -- Level text & Cost / Locked status
-        local displayLevel = upgrade.level
-        local displayMaxLevel = maxLevel
-        if i > 4 then
-            local prevMax = getMaxUpgradeLevel(i - 4)
-            displayLevel = upgrade.level + prevMax
-            displayMaxLevel = maxLevel + prevMax
-        end
-
+        -- Level text & Cost / Maxed status
         gfx.setFont(roobert11)
-        gfx.drawText("Lvl " .. displayLevel .. "/" .. displayMaxLevel, x + 6, y + 42)
+        gfx.drawText("Lvl " .. upgrade.level .. "/" .. maxLevel, x + 6, y + 42)
 
-        if locked then
-            if i == 8 then
-                gfx.drawText("LOCKED", x + 6, y + 58)
-            else
-                gfx.drawText("LVL 2 REQ", x + 6, y + 58)
-            end
+        if upgrade.level < maxLevel then
+            local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
+            gfx.drawText("Cost: $" .. nextCost, x + 6, y + 58)
         else
-            if upgrade.level < maxLevel then
-                local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-                gfx.drawText("Cost: $" .. nextCost, x + 6, y + 58)
-            else
-                gfx.drawText("MAXED", x + 6, y + 58)
-            end
+            gfx.drawText("MAXED", x + 6, y + 58)
         end
     end
 
@@ -422,10 +318,10 @@ function drawSecretMenu()
     gfx.setFont(roobert11)
 
     local items = {
-        { name = "Value", type = "upgrade", index = 1, max = 20 },
-        { name = "Speed", type = "upgrade", index = 2, max = 20 },
-        { name = "Line",  type = "upgrade", index = 3, max = 20 },
-        { name = "Boost", type = "upgrade", index = 4, max = 6 },
+        { name = "Value", type = "upgrade", index = 1, max = 10 },
+        { name = "Speed", type = "upgrade", index = 2, max = 10 },
+        { name = "Line",  type = "upgrade", index = 3, max = 10 },
+        { name = "Boost", type = "upgrade", index = 4, max = 3 },
         { name = "Fish 1", type = "fishSize", index = 1, max = 100 },
         { name = "Fish 2", type = "fishSize", index = 2, max = 100 },
         { name = "Fish 3", type = "fishSize", index = 3, max = 100 },
@@ -442,7 +338,6 @@ function drawSecretMenu()
         { name = "B-Cooldown", type = "boostCooldown", value = State.boostCooldownDuration },
         { name = "Markers", type = "toggle", key = "showFishMarkers" },
         { name = "Inf-Money", type = "toggle", key = "infiniteMoney" },
-        { name = "L2-Unlock", type = "toggle", key = "level2Unlocked" },
     }
 
     -- Scrolling logic: show max 8 items at a time

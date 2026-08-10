@@ -34,8 +34,6 @@ function handleInput()
         handleMusicInput()
     elseif State.currentScreen == "secret_menu" then
         handleSecretMenuInput()
-    elseif State.currentScreen == "level_select" then
-        handleLevelSelectInput()
     elseif State.currentScreen == "debug" then
         handleDebugMenuInput()
     end
@@ -76,48 +74,6 @@ function handleDockInput()
         State.currentScreen = "upgrade"
     elseif playdate.buttonJustPressed(playdate.kButtonRight) then
         State.currentScreen = "music"
-    elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-        State.originalLevel = State.currentLevel
-        State.currentScreen = "level_select"
-    end
-end
-
-function handleLevelSelectInput()
-    if State.showUnlockPrompt then
-        if playdate.buttonJustPressed(playdate.kButtonA) then
-            if State.money >= 250 then
-                State.money = State.money - 250
-                State.level2Unlocked = true
-                State.showUnlockPrompt = false
-                State.currentLevel = 2
-                updateLevelAssets()
-                State.currentScreen = "dock"
-            end
-        elseif playdate.buttonJustPressed(playdate.kButtonB) then
-            State.showUnlockPrompt = false
-            State.currentLevel = 1
-            updateLevelAssets()
-        end
-        return
-    end
-
-    if playdate.buttonJustPressed(playdate.kButtonB) then
-        State.currentLevel = State.originalLevel
-        updateLevelAssets()
-        State.currentScreen = "dock"
-    elseif playdate.buttonJustPressed(playdate.kButtonA) then
-        if State.currentLevel == 2 and not State.level2Unlocked then
-            State.showUnlockPrompt = true
-        else
-            State.currentScreen = "dock"
-        end
-    elseif playdate.buttonJustPressed(playdate.kButtonUp) or playdate.buttonJustPressed(playdate.kButtonDown) then
-        if State.currentLevel == 1 then
-            State.currentLevel = 2
-        else
-            State.currentLevel = 1
-        end
-        updateLevelAssets()
     end
 end
 
@@ -126,32 +82,22 @@ function handleUpgradeInput()
         State.currentScreen = "dock"
     else
         local sel = State.selectedUpgrade
-        if playdate.buttonJustPressed(playdate.kButtonUp) then
-            if sel > 4 then State.selectedUpgrade = sel - 4 end
-        elseif playdate.buttonJustPressed(playdate.kButtonDown) then
-            if sel <= 4 then State.selectedUpgrade = sel + 4 end
-        elseif playdate.buttonJustPressed(playdate.kButtonLeft) then
-            if sel == 2 or sel == 3 or sel == 4 or sel == 6 or sel == 7 or sel == 8 then
-                State.selectedUpgrade = sel - 1
-            end
+        if playdate.buttonJustPressed(playdate.kButtonLeft) then
+            if sel > 1 then State.selectedUpgrade = sel - 1 end
         elseif playdate.buttonJustPressed(playdate.kButtonRight) then
-            if sel == 1 or sel == 2 or sel == 3 or sel == 5 or sel == 6 or sel == 7 then
-                State.selectedUpgrade = sel + 1
-            end
+            if sel < 4 then State.selectedUpgrade = sel + 1 end
         end
 
         sel = State.selectedUpgrade
         if playdate.buttonJustPressed(playdate.kButtonA) then
-            if not isUpgradeLocked(sel) then
-                local nextLevel = State.upgrades[sel].level + 1
-                local maxLevel = getMaxUpgradeLevel(sel)
-                if nextLevel <= maxLevel then
-                    local cost = calculateUpgradeCost(sel, nextLevel)
-                    if State.money >= cost then
-                        State.money = State.money - cost
-                        State.upgrades[sel].level = nextLevel
-                        Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
-                    end
+            local nextLevel = State.upgrades[sel].level + 1
+            local maxLevel = getMaxUpgradeLevel(sel)
+            if nextLevel <= maxLevel then
+                local cost = calculateUpgradeCost(sel, nextLevel)
+                if State.money >= cost then
+                    State.money = State.money - cost
+                    State.upgrades[sel].level = nextLevel
+                    Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
                 end
             end
         end
@@ -180,7 +126,7 @@ function handleMusicInput()
 end
 
 function handleSecretMenuInput()
-    local numItems = 21
+    local numItems = 20
     if playdate.buttonJustPressed(playdate.kButtonUp) then
         State.secretMenuIndex = math.max(1, State.secretMenuIndex - 1)
     elseif playdate.buttonJustPressed(playdate.kButtonDown) then
@@ -190,7 +136,7 @@ function handleSecretMenuInput()
     local idx = State.secretMenuIndex
     if idx <= 4 then -- Upgrades
         local uIdx = idx
-        local maxLevel = (uIdx == 4) and 6 or 20
+        local maxLevel = (uIdx == 4) and 3 or 10
         local minLevel = (uIdx == 4) and 0 or -maxLevel
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
             State.upgrades[uIdx].level = math.max(minLevel, State.upgrades[uIdx].level - 1)
@@ -253,10 +199,6 @@ function handleSecretMenuInput()
     elseif idx == 20 then -- Infinite Money
         if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
             State.infiniteMoney = not State.infiniteMoney
-        end
-    elseif idx == 21 then -- Level 2 Unlock
-        if playdate.buttonJustPressed(playdate.kButtonLeft) or playdate.buttonJustPressed(playdate.kButtonRight) then
-            State.level2Unlocked = not State.level2Unlocked
         end
     end
 

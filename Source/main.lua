@@ -30,9 +30,7 @@ playdate.display.setRefreshRate(Config.RefreshRate)
 local levelTopImage = gfx.image.new('images/level/2-top')
 levelCollisionImage = gfx.image.new('images/level/2-collision')
 
-function updateLevelAssets()
-    -- No-op: Both Level 1 and Level 2 use the same map
-end
+
 
 dockImage = gfx.image.new('images/level/dock-splash')
 dockObjectImage = gfx.image.new('images/fish/littleguy')
@@ -262,8 +260,6 @@ function playdate.update()
         drawDebugMenu()
     elseif State.currentScreen == "secret_menu" then
         drawSecretMenu()
-    elseif State.currentScreen == "level_select" then
-        drawLevelSelectScreen()
     else
         -- Fallback: unknown screen
         gfx.clear(gfx.kColorWhite)
