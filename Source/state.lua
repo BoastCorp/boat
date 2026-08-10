@@ -40,7 +40,7 @@ State = {
     upgrades = {
         { name = "Value",    level = 0 },  -- [1] Fish value: +$1 per level
         { name = "Speed",    level = 0 },  -- [2] Boat speed: +15% per level
-        { name = "Line",     level = 0 },  -- [3] Wake length: +10% per level
+        { name = "Line",     level = 0 },  -- [3] Wake length: +20% per level
         { name = "Boost",    level = 0 },  -- [4] Boost cooldown: -0.5s per level
     },
     selectedUpgrade = 1,

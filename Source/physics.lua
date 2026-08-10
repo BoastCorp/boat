@@ -319,7 +319,7 @@ function updatePhysics()
     local right_wy = -dirX
 
     local wake = State.wake
-    local maxPhysLen = Config.WakeMaxLength * (1 + getEffectiveUpgradeLevel(3) * 0.1)
+    local maxPhysLen = Config.WakeMaxLength * (1 + getEffectiveUpgradeLevel(3) * 0.2)
 
     if boat.bounceFrames <= 0 and not isStuck then
         if #wake == 0 then
