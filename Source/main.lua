@@ -166,10 +166,7 @@ local function drawContent()
             local dx, dy = f.x - bx, f.y - by
             if dx > -220 and dx < 220 and dy > -140 and dy < 140 then
                 local fx, fy = 200 + dx, 120 + dy
-                local img = fishImageCache[f.size]
-                if img then
-                    img:drawRotated(fx, fy, f.angle or 0)
-                end
+                drawWavyFish(fx, fy, f.size, f.angle or 0)
             end
         end
     end

@@ -299,3 +299,64 @@ function updateFishMovement()
     end
 end
 
+function drawWavyFish(fx, fy, size, angle)
+    local numVertices = 36
+    local w = size * 1.5
+    local h = size * 0.7
+    local a = w / 2
+    local b = h / 2
+    
+    -- Parameters for the border sine wave
+    local amp = size * 0.03 -- Very subtle protrusion (reduced by 25%)
+    local freq = 2.0        -- Number of wave cycles along each side
+    local phase = State.totalFramesPlayed * 0.1 -- Slow-moving wave
+    
+    local coords = {}
+    local angleRad = math.rad(angle or 0)
+    local cosA = math.cos(angleRad)
+    local sinA = math.sin(angleRad)
+    
+    for i = 1, numVertices do
+        local theta = (2 * math.pi / numVertices) * i
+        
+        -- Base ellipse coordinates
+        local ex = a * math.cos(theta)
+        local ey = b * math.sin(theta)
+        
+        -- Normalized progress u from head (0 / 2pi) to tail (pi)
+        local u = 0
+        local sideSign = 1
+        if theta <= math.pi then
+            u = theta / math.pi
+            sideSign = 1
+        else
+            u = (2 * math.pi - theta) / math.pi
+            sideSign = -1
+        end
+        
+        -- Envelope makes the wave amplitude 0 at both head (u=0) and tail (u=1)
+        local envelope = math.sin(math.pi * u)
+        local wave = amp * envelope * math.sin(2 * math.pi * freq * u - phase)
+        
+        -- Offset local y coordinate outward
+        local lx = ex
+        local ly = ey + (sideSign * wave)
+        
+        -- Rotate and translate to screen coordinates
+        local rx = lx * cosA - ly * sinA
+        local ry = lx * sinA + ly * cosA
+        
+        table.insert(coords, fx + rx)
+        table.insert(coords, fy + ry)
+    end
+    
+    -- Close polygon
+    table.insert(coords, coords[1])
+    table.insert(coords, coords[2])
+    
+    local poly = playdate.geometry.polygon.new(table.unpack(coords))
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillPolygon(poly)
+end
+
+
