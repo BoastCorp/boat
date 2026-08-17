@@ -103,7 +103,7 @@ function drawDockScreen()
     local menuItems = {
         { name = "Play", x = 30, y = 50, width = 180, height = 55, isSprite = true, sprite = playSpriteImage },
         { name = "Upgrades", x = 30, y = 110, width = 180, height = 55, isSprite = true, sprite = upgradeSpriteImage },
-        { name = "Soundtrack", x = 50, y = 180, width = 120, height = 24, isSprite = false }
+        { name = "Soundtrack", x = 30, y = 170, width = 180, height = 55, isSprite = true, sprite = tapeSpriteImage }
     }
     
     for i, item in ipairs(menuItems) do
