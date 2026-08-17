@@ -78,19 +78,22 @@ end
 function drawDockScreen()
     gfx.clear(gfx.kColorBlack)
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    if littleguymenubImage then
-        local w, h = littleguymenubImage:getSize()
-        local x = 400 - w
-        local y = 240 - h
-        littleguymenubImage:draw(x, y)
-        if textboxImage then
-            local tbW, tbH = textboxImage:getSize()
-            local tbX = 400 - tbW
-            local tbY = y - tbH
-            textboxImage:draw(tbX, tbY)
-        end
+    local frameDuration = 5 -- 5 frames per animation step at 50 FPS (10 FPS animation)
+    State.dockFrameCounter = ((State.dockFrameCounter or 0) + 1) % (44 * frameDuration)
+    local step = math.floor(State.dockFrameCounter / frameDuration)
+    local cycleStep = step % 44
+    local currentFrame = 1
+    
+    if cycleStep < 40 then
+        currentFrame = (cycleStep % 4) + 1
     else
-        gfx.drawText("DOCK (Image missing)", 100, 100)
+        currentFrame = (cycleStep - 40) + 5
+    end
+    
+    if dockSpriteImage then
+        dockSpriteImage:draw(0, 0, gfx.kImageUnflipped, (currentFrame - 1) * 400, 0, 400, 240)
+    else
+        gfx.drawText("DOCK (Animation Image missing)", 100, 100)
     end
 
     -- Draw list menu on the left side
