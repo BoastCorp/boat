@@ -99,22 +99,41 @@ function drawDockScreen()
     -- Draw list menu on the left side
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
     gfx.setColor(gfx.kColorWhite)
-    gfx.setFont(roobert24)
     
-    local menuX = 50
-    local menuY = 60
-    local spacing = 45
-    local menuItems = { "Play", "Upgrades", "Soundtrack" }
+    local menuItems = {
+        { name = "Play", x = 30, y = 50, width = 180, height = 55, isSprite = true },
+        { name = "Upgrades", x = 50, y = 120, width = 120, height = 24, isSprite = false },
+        { name = "Soundtrack", x = 50, y = 170, width = 120, height = 24, isSprite = false }
+    }
     
     for i, item in ipairs(menuItems) do
-        local itemY = menuY + (i - 1) * spacing
-        if i == State.dockMenuIndex then
-            -- Draw vector triangle pointing right next to selected item
-            local arrowX = menuX - 20
-            local arrowY = itemY + 8
+        local isSelected = (i == State.dockMenuIndex)
+        if isSelected then
+            -- Draw vector triangle pointing right next to selected item, centered vertically
+            local arrowX = item.x - 20
+            local arrowY = item.y + (item.height / 2) - 5
             gfx.fillTriangle(arrowX, arrowY, arrowX + 8, arrowY + 5, arrowX, arrowY + 10)
         end
-        gfx.drawText(item, menuX, itemY)
+        
+        if item.isSprite then
+            if playSpriteImage then
+                local playFrame = 1
+                if isSelected then
+                    local frameDuration = 5
+                    local playStep = math.floor(State.dockFrameCounter / frameDuration) % 4
+                    playFrame = playStep + 1
+                end
+                gfx.setImageDrawMode(gfx.kDrawModeCopy)
+                playSpriteImage:draw(item.x, item.y, gfx.kImageUnflipped, (playFrame - 1) * 180, 0, 180, 55)
+                gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            else
+                gfx.setFont(roobert24)
+                gfx.drawText(item.name, item.x, item.y + 15)
+            end
+        else
+            gfx.setFont(roobert24)
+            gfx.drawText(item.name, item.x, item.y)
+        end
     end
 
     gfx.setImageDrawMode(gfx.kDrawModeCopy)

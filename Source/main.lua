@@ -34,6 +34,7 @@ levelCollisionImage = gfx.image.new('images/level/2-collision')
 
 littleguymenubImage = gfx.image.new('images/fish/littleguymenub')
 dockSpriteImage = gfx.image.new('images/menu/dock_sprite')
+playSpriteImage = gfx.image.new('images/menu/play_sprite')
 dockObjectImage = gfx.image.new('images/fish/littleguy')
 tapeImage = gfx.image.new('images/menu/tape_invert')
 textboxImage = gfx.image.new('images/menu/textbox')
