@@ -101,9 +101,33 @@ function drawDockScreen()
     gfx.setColor(gfx.kColorWhite)
     
     local menuItems = {
-        { name = "Play", x = 30, y = 50, width = 180, height = 55, isSprite = true, sprite = playSpriteImage },
-        { name = "Upgrades", x = 30, y = 110, width = 180, height = 55, isSprite = true, sprite = upgradeSpriteImage },
-        { name = "Soundtrack", x = 30, y = 170, width = 180, height = 55, isSprite = true, sprite = tapeSpriteImage }
+        { 
+            name = "Play", 
+            x = 30, y = 50, width = 180, height = 55, 
+            isSprite = true, 
+            sprite = playSpriteImage, 
+            selectedSprite = playSpriteImage,
+            drawMode = gfx.kDrawModeCopy,
+            selectedDrawMode = gfx.kDrawModeCopy
+        },
+        { 
+            name = "Upgrades", 
+            x = 30, y = 110, width = 180, height = 55, 
+            isSprite = true, 
+            sprite = upgradeSpriteImage, 
+            selectedSprite = upgradeSpriteImage,
+            drawMode = gfx.kDrawModeCopy,
+            selectedDrawMode = gfx.kDrawModeCopy
+        },
+        { 
+            name = "Soundtrack", 
+            x = 30, y = 170, width = 180, height = 55, 
+            isSprite = true, 
+            sprite = tapeSpriteImage, 
+            selectedSprite = tapeSpriteInvertImage,
+            drawMode = gfx.kDrawModeCopy,
+            selectedDrawMode = gfx.kDrawModeInverted
+        }
     }
     
     for i, item in ipairs(menuItems) do
@@ -116,7 +140,8 @@ function drawDockScreen()
         end
         
         if item.isSprite then
-            local spriteImg = item.sprite
+            local spriteImg = isSelected and item.selectedSprite or item.sprite
+            local mode = isSelected and item.selectedDrawMode or item.drawMode
             if spriteImg then
                 local currentFrame = 1
                 if isSelected then
@@ -124,7 +149,7 @@ function drawDockScreen()
                     local step = math.floor(State.dockFrameCounter / frameDuration) % 4
                     currentFrame = step + 1
                 end
-                gfx.setImageDrawMode(gfx.kDrawModeCopy)
+                gfx.setImageDrawMode(mode)
                 spriteImg:draw(item.x, item.y, gfx.kImageUnflipped, (currentFrame - 1) * 180, 0, 180, 55)
                 gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
             else
