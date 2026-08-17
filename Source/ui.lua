@@ -101,9 +101,9 @@ function drawDockScreen()
     gfx.setColor(gfx.kColorWhite)
     
     local menuItems = {
-        { name = "Play", x = 30, y = 50, width = 180, height = 55, isSprite = true },
-        { name = "Upgrades", x = 50, y = 120, width = 120, height = 24, isSprite = false },
-        { name = "Soundtrack", x = 50, y = 170, width = 120, height = 24, isSprite = false }
+        { name = "Play", x = 30, y = 50, width = 180, height = 55, isSprite = true, sprite = playSpriteImage },
+        { name = "Upgrades", x = 30, y = 110, width = 180, height = 55, isSprite = true, sprite = upgradeSpriteImage },
+        { name = "Soundtrack", x = 50, y = 180, width = 120, height = 24, isSprite = false }
     }
     
     for i, item in ipairs(menuItems) do
@@ -116,15 +116,16 @@ function drawDockScreen()
         end
         
         if item.isSprite then
-            if playSpriteImage then
-                local playFrame = 1
+            local spriteImg = item.sprite
+            if spriteImg then
+                local currentFrame = 1
                 if isSelected then
                     local frameDuration = 5
-                    local playStep = math.floor(State.dockFrameCounter / frameDuration) % 4
-                    playFrame = playStep + 1
+                    local step = math.floor(State.dockFrameCounter / frameDuration) % 4
+                    currentFrame = step + 1
                 end
                 gfx.setImageDrawMode(gfx.kDrawModeCopy)
-                playSpriteImage:draw(item.x, item.y, gfx.kImageUnflipped, (playFrame - 1) * 180, 0, 180, 55)
+                spriteImg:draw(item.x, item.y, gfx.kImageUnflipped, (currentFrame - 1) * 180, 0, 180, 55)
                 gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
             else
                 gfx.setFont(roobert24)
