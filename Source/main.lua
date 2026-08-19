@@ -27,8 +27,8 @@ math.randomseed(playdate.getSecondsSinceEpoch())
 playdate.display.setRefreshRate(Config.RefreshRate)
 
 -- Load level assets
-local levelTopImage = gfx.image.new('images/level/2-top')
-levelCollisionImage = gfx.image.new('images/level/2-collision')
+local levelTopImage = gfx.image.new('images/level/map1')
+levelCollisionImage = gfx.image.new('images/level/collision1')
 
 
 
@@ -37,7 +37,8 @@ dockSpriteImage = gfx.image.new('images/menu/dock_sprite')
 playSpriteImage = gfx.image.new('images/menu/play_sprite')
 upgradeSpriteImage = gfx.image.new('images/menu/upgrade_sprite')
 tapeSpriteImage = gfx.image.new('images/menu/tape_sprite')
-dockObjectImage = gfx.image.new('images/fish/littleguy')
+dockObjectImageTable = gfx.imagetable.new('images/fish/littleguyswim_sprite')
+dockBubbleImageTable = gfx.imagetable.new('images/fish/dockbubble-sprite')
 tapeImage = gfx.image.new('images/menu/tape_invert')
 textboxImage = gfx.image.new('images/menu/textbox')
 
@@ -47,9 +48,10 @@ local boatImage = gfx.image.new('images/boat/boat40x40')
 -- Load fonts for UI
 roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
+asheville14 = gfx.font.new('System/Fonts/Asheville-Sans-14-Bold')
 
 -- Cache for fish images
-fishImageCache = {}
+fishAnimCache = {}
 
 preRenderFishImages()
 
@@ -176,14 +178,20 @@ local function drawContent()
     end
 
     -- Draw dock object and boat
-    gfx.setImageDrawMode(mainDrawMode)
-    if dockObjectImage then
+    if dockObjectImageTable then
+        gfx.setImageDrawMode(mainDrawMode)
         local dx, dy = 200 + (State.littleguy.x - bx), 120 + (State.littleguy.y - by)
         if dx > -50 and dx < 450 and dy > -50 and dy < 290 then
-            dockObjectImage:drawAnchored(dx, dy, 0.5, 0.5)
+            local ms = playdate.getCurrentTimeMilliseconds()
+            local frame = (math.floor(ms / 150) % 4) + 1
+            local img = dockObjectImageTable:getImage(frame)
+            if img then
+                img:drawAnchored(dx, dy, 0.5, 0.5)
+            end
         end
     end
 
+    gfx.setImageDrawMode(mainDrawMode)
     if boatImage then
         boatImage:drawRotated(200, 120, State.boat.angle)
     end
@@ -203,20 +211,79 @@ local function drawContent()
     -- Floating catch text popups
     drawFloatingTexts()
 
-    -- Pause message
-    if State.isPaused then
-        gfx.setColor(gfx.kColorBlack)
-        gfx.fillRect(60, 70, 280, 100)
-        gfx.setColor(uiColor)
-        gfx.drawRect(60, 70, 280, 100)
-        
-        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        gfx.setFont(roobert24)
-        gfx.drawText("DOCK!", 135, 80)
-        gfx.setFont(roobert11)
-        gfx.drawText("Go back to dock?", 150, 115)
-        gfx.drawText("A: Yes (Dock)   B: No (Stay)", 115, 140)
-        gfx.setFont(nil)
+    -- Pause message (Dock Bubble)
+    if State.isPaused and dockBubbleImageTable then
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        local dx, dy = 200 + (State.littleguy.x - bx), 120 + (State.littleguy.y - by)
+        local ms = playdate.getCurrentTimeMilliseconds()
+        local frame = (math.floor(ms / 150) % 4) + 1
+        local img = dockBubbleImageTable:getImage(frame)
+        if img then
+            -- Draw bubble 3px above the littleguy's head (which is 18.5px above his center y)
+            img:drawAnchored(dx, dy - 21.5, 0.5, 1.0)
+            
+            -- Draw the text "follow?" on the left half of the bubble with spacing and trembling
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            local text = "follow?"
+            local spacing = 3 -- Adjusted spacing to 3px to fit comfortably inside the left chamber
+            local font = asheville14 or roobert11
+            gfx.setFont(font)
+            
+            -- Static height offsets for each letter in "follow?" to create a playful bumpy baseline
+            local staticOffsets = { -1, 1, -2, 2, -1, 0, 1 }
+            
+            -- Calculate total width of the spaced-out string
+            local totalWidth = 0
+            local letterWidths = {}
+            for i = 1, #text do
+                local char = text:sub(i, i)
+                local w = font:getTextWidth(char)
+                letterWidths[i] = w
+                totalWidth = totalWidth + w
+                if i < #text then
+                    totalWidth = totalWidth + spacing
+                end
+            end
+            
+            -- Center of the horizontal space between left border and circles is dx - 32
+            local startX = (dx - 32) - (totalWidth / 2)
+            -- Vertically centered between top and bottom circles is dy - 54
+            local centerY = dy - 54
+            
+            local currentX = startX
+            local ms = playdate.getCurrentTimeMilliseconds()
+            
+            for i = 1, #text do
+                local char = text:sub(i, i)
+                local charW = letterWidths[i]
+                
+                -- Calculate trembling offset for letter i using sine waves and time
+                local tx = 0
+                local ty = 0
+                -- Reduced speed multiplier from 0.03 to 0.005 for a much slower tremble
+                local phaseX = (ms * 0.005) + (i * 2.1)
+                local phaseY = (ms * 0.006) + (i * 3.7)
+                
+                -- Increased threshold to 0.85 so letters stay at 0 most of the time (subtle, occasional tremble)
+                if math.sin(phaseX) > 0.85 then
+                    tx = 1
+                elseif math.sin(phaseX) < -0.85 then
+                    tx = -1
+                end
+                
+                if math.cos(phaseY) > 0.85 then
+                    ty = 1
+                elseif math.cos(phaseY) < -0.85 then
+                    ty = -1
+                end
+                
+                -- Draw the character at currentX + trembleOffset
+                local staticOffset = staticOffsets[i] or 0
+                gfx.drawText(char, currentX + tx, centerY - 7 + staticOffset + ty)
+                
+                currentX = currentX + charW + spacing
+            end
+        end
     end
 end
 

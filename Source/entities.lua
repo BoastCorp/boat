@@ -3,17 +3,60 @@ import "config"
 import "physics"
 
 function preRenderFishImages()
+    fishAnimCache = {}
+    local numVertices = 24 -- Smooth enough for pre-rendering
+    local freq = 2.0
+    
     for _, size in ipairs(State.fishSizes) do
-        local w = math.ceil(size * 1.5) + 4
-        local h = math.ceil(size * 0.7) + 4
-        local img = gfx.image.new(w, h, gfx.kColorClear)
+        fishAnimCache[size] = {}
+        local w = math.ceil(size * 1.5) + 12
+        local h = math.ceil(size * 0.7) + 12
+        local a = (size * 1.5) / 2
+        local b = (size * 0.7) / 2
+        local amp = size * 0.015
         
-        gfx.pushContext(img)
-            gfx.setColor(gfx.kColorWhite)
-            gfx.fillEllipseInRect(2, 2, w-4, h-4)
-        gfx.popContext()
-        
-        fishImageCache[size] = img
+        -- Pre-render 4 frames of the wave animation
+        for frame = 1, 4 do
+            local img = gfx.image.new(w, h, gfx.kColorClear)
+            local phase = (frame - 1) * (2 * math.pi / 4)
+            local coords = {}
+            
+            for i = 1, numVertices do
+                local theta = (2 * math.pi / numVertices) * i
+                local ex = a * math.cos(theta)
+                local ey = b * math.sin(theta)
+                
+                local u = 0
+                local sideSign = 1
+                if theta <= math.pi then
+                    u = theta / math.pi
+                    sideSign = 1
+                else
+                    u = (2 * math.pi - theta) / math.pi
+                    sideSign = -1
+                end
+                
+                local envelope = math.sin(math.pi * u)
+                local wave = amp * envelope * math.sin(2 * math.pi * freq * u - phase)
+                
+                local lx = ex
+                local ly = ey + (sideSign * wave)
+                
+                table.insert(coords, w/2 + lx)
+                table.insert(coords, h/2 + ly)
+            end
+            
+            table.insert(coords, coords[1])
+            table.insert(coords, coords[2])
+            
+            gfx.pushContext(img)
+                local poly = playdate.geometry.polygon.new(table.unpack(coords))
+                gfx.setColor(gfx.kColorWhite)
+                gfx.fillPolygon(poly)
+            gfx.popContext()
+            
+            fishAnimCache[size][frame] = img
+        end
     end
 end
 
@@ -214,8 +257,9 @@ function updateLittleGuyMovement()
     local nx = lg.x + vx
     local ny = lg.y + vy
 
-    -- Boundary check for littleguy
-    if isInAnyObstacle(nx, ny) or nx < 100 or nx > 1300 or ny < 100 or ny > 1300 then
+    -- Boundary check for littleguy (ensure 100px border buffer and no obstacle collision within radius)
+    local buffer = 100
+    if nx < buffer or nx > Config.PlayArea.width - buffer or ny < buffer or ny > Config.PlayArea.height - buffer or not isSafeWater(nx, ny, lg.radius) then
         lg.targetAngle = lg.angle + 180
         lg.state = "drift"
         lg.timer = 50
@@ -285,7 +329,7 @@ function updateFishMovement()
             local nx = fish.x + vx
             local ny = fish.y + vy
 
-            -- Collision/Boundary check
+            -- Collision/Boundary check (reverted to single point check for performance)
             if isInAnyObstacle(nx, ny) or nx < 0 or nx > Config.PlayArea.width or ny < 0 or ny > Config.PlayArea.height then
                 -- Bounce off or stop
                 fish.targetAngle = fish.angle + 180
@@ -300,63 +344,15 @@ function updateFishMovement()
 end
 
 function drawWavyFish(fx, fy, size, angle)
-    local numVertices = 36
-    local w = size * 1.5
-    local h = size * 0.7
-    local a = w / 2
-    local b = h / 2
+    local animFrames = fishAnimCache[size]
+    if not animFrames then return end
     
-    -- Parameters for the border sine wave
-    local amp = size * 0.03 -- Very subtle protrusion (reduced by 25%)
-    local freq = 2.0        -- Number of wave cycles along each side
-    local phase = State.totalFramesPlayed * 0.1 -- Slow-moving wave
-    
-    local coords = {}
-    local angleRad = math.rad(angle or 0)
-    local cosA = math.cos(angleRad)
-    local sinA = math.sin(angleRad)
-    
-    for i = 1, numVertices do
-        local theta = (2 * math.pi / numVertices) * i
-        
-        -- Base ellipse coordinates
-        local ex = a * math.cos(theta)
-        local ey = b * math.sin(theta)
-        
-        -- Normalized progress u from head (0 / 2pi) to tail (pi)
-        local u = 0
-        local sideSign = 1
-        if theta <= math.pi then
-            u = theta / math.pi
-            sideSign = 1
-        else
-            u = (2 * math.pi - theta) / math.pi
-            sideSign = -1
-        end
-        
-        -- Envelope makes the wave amplitude 0 at both head (u=0) and tail (u=1)
-        local envelope = math.sin(math.pi * u)
-        local wave = amp * envelope * math.sin(2 * math.pi * freq * u - phase)
-        
-        -- Offset local y coordinate outward
-        local lx = ex
-        local ly = ey + (sideSign * wave)
-        
-        -- Rotate and translate to screen coordinates
-        local rx = lx * cosA - ly * sinA
-        local ry = lx * sinA + ly * cosA
-        
-        table.insert(coords, fx + rx)
-        table.insert(coords, fy + ry)
+    -- Pick frame based on total frames played (cycling every 4 frames)
+    local frame = (math.floor(State.totalFramesPlayed / 8) % 4) + 1
+    local img = animFrames[frame]
+    if img then
+        img:drawRotated(fx, fy, angle)
     end
-    
-    -- Close polygon
-    table.insert(coords, coords[1])
-    table.insert(coords, coords[2])
-    
-    local poly = playdate.geometry.polygon.new(table.unpack(coords))
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillPolygon(poly)
 end
 
 

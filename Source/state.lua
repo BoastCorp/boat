@@ -26,7 +26,9 @@ State = {
         speed = 0.3,
         timer = 0,
         state = "drift",
-        radius = 25, -- Collision radius
+        width = 45,
+        height = 37,
+        radius = 18.5, -- Obstacle clearance radius (half of height)
     },
     wake = {},
     wakePool = {}, -- Pre-allocated/recycled tables for wake points

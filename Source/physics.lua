@@ -47,13 +47,11 @@ function isSafeWater(x, y, radius)
     -- If no radius check needed, we're done
     if r <= 0 then return true end
     
-    -- Check 8 points around the circle to ensure clearance from land
-    for a = 0, 7 do
-        local angle = a * (math.pi / 4)
-        local sx = x + math.cos(angle) * r
-        local sy = y + math.sin(angle) * r
-        if isInAnyObstacle(sx, sy) then return false end
-    end
+    -- Check 4 orthogonal points around the circle to ensure clearance from land
+    if isInAnyObstacle(x + r, y) then return false end
+    if isInAnyObstacle(x - r, y) then return false end
+    if isInAnyObstacle(x, y + r) then return false end
+    if isInAnyObstacle(x, y - r) then return false end
     
     return true
 end
@@ -295,12 +293,25 @@ function updatePhysics()
     end
     boat.isStuck = isStuck
 
-    -- Check for littleguy collision (trigger dock prompt)
-    local dx = boat.x - State.littleguy.x
-    local dy = boat.y - State.littleguy.y
-    local distSq = dx * dx + dy * dy
-    local lgRadius = State.littleguy.radius
-    if distSq < (lgRadius * lgRadius) then
+    -- Check for littleguy collision (trigger dock prompt) using 45x37 rectangular hitbox
+    local lg = State.littleguy
+    local halfW = lg.width / 2
+    local halfH = lg.height / 2
+    local collided = false
+
+    if math.abs(boat.x - lg.x) < halfW and math.abs(boat.y - lg.y) < halfH then
+        collided = true
+    else
+        local corners = boat.corners or {}
+        for _, corner in ipairs(corners) do
+            if math.abs(corner[1] - lg.x) < halfW and math.abs(corner[2] - lg.y) < halfH then
+                collided = true
+                break
+            end
+        end
+    end
+
+    if collided then
         State.isPaused = true
         State.pausedByDock = true
     end
