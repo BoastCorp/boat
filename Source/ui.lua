@@ -144,98 +144,42 @@ end
 
 function drawUpgradeScreen()
     gfx.clear(gfx.kColorBlack)
+    
+    local shapes = {
+        { x=33, y=69, w=111, h=137 },
+        { x=155, y=56, w=68, h=147 },
+        { x=240, y=50, w=96, h=157 },
+        { x=342, y=95, w=36, h=105 }
+    }
+    
     gfx.setColor(gfx.kColorWhite)
-    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-
-    -- Wallet footer (more visually pleasing at bottom)
-    gfx.drawLine(0, 210, 400, 210)
-    gfx.setFont(roobert24)
-    gfx.drawText("$" .. State.money, 10, 212)
-    gfx.setFont(roobert11)
-    gfx.drawText("D-Pad: Select   A: Buy Upgrade   B: Back", 140, 218)
-
-    -- Single Row Logic (4 upgrades)
-    local cellW = 90
-    local cellH = 80
-    local colSpacing = 8
-    local startX = (400 - (4 * cellW + 3 * colSpacing)) / 2  -- 8px padding on sides
-    local startY = 65  -- Centered vertically in the 210px space
-
+    
     for i, upgrade in ipairs(State.upgrades) do
-        local x = startX + (i - 1) * (cellW + colSpacing)
-        local y = startY
-
-        local isSelected = (i == State.selectedUpgrade)
-
-        -- Draw box
-        if isSelected then
-            gfx.setColor(gfx.kColorWhite)
-            gfx.fillRect(x, y, cellW, cellH)
-            gfx.setColor(gfx.kColorBlack)
-            gfx.setImageDrawMode(gfx.kDrawModeFillBlack)
-        else
-            gfx.setColor(gfx.kColorWhite)
-            gfx.drawRect(x, y, cellW, cellH)
-            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-        end
-
-        -- Name (using small font roobert11 to prevent overflow on 90px cells)
-        gfx.setFont(roobert11)
-        gfx.drawText(upgrade.name, x + 6, y + 6)
-
-        -- Progress bar
-        local maxLevel = getMaxUpgradeLevel(i)
-        
-        -- Set shape drawing color to match the box selection state
-        if isSelected then
-            gfx.setColor(gfx.kColorBlack)
-        else
-            gfx.setColor(gfx.kColorWhite)
-        end
-        
-        -- Draw graphical progress bar
-        local barY = y + 25
-        local barH = 6
-        local spacing = 1
-        
-        if maxLevel == 10 then
-            local segW = 6 -- 6 * 10 + 9 * 1 = 69px
-            local startSegX = x + 6
-            for j = 1, 10 do
-                local sx = startSegX + (j - 1) * (segW + spacing)
-                if upgrade.level >= j then
-                    gfx.fillRect(sx, barY, segW, barH)
-                else
-                    gfx.drawRect(sx, barY, segW, barH)
-                end
-            end
-        elseif maxLevel == 3 then
-            local segW = 22 -- 22 * 3 + 2 * 2 = 70px
-            local startSegX = x + 6
-            for j = 1, 3 do
-                local sx = startSegX + (j - 1) * (segW + 2)
-                if upgrade.level >= j then
-                    gfx.fillRect(sx, barY, segW, barH)
-                else
-                    gfx.drawRect(sx, barY, segW, barH)
-                end
-            end
-        end
-
-        -- Level text & Cost / Maxed status
-        gfx.setFont(roobert11)
-        gfx.drawText("Lvl " .. upgrade.level .. "/" .. maxLevel, x + 6, y + 42)
-
-        if upgrade.level < maxLevel then
-            local nextCost = calculateUpgradeCost(i, upgrade.level + 1)
-            gfx.drawText("Cost: $" .. nextCost, x + 6, y + 58)
-        else
-            gfx.drawText("MAXED", x + 6, y + 58)
+        if i <= 4 then
+            local shape = shapes[i]
+            local maxLevel = getMaxUpgradeLevel(i)
+            local percentage = upgrade.level / maxLevel
+            local fillHeight = shape.h * percentage
+            
+            -- Draw white rectangle from bottom to top
+            gfx.fillRect(shape.x, shape.y + shape.h - fillHeight, shape.w, fillHeight)
         end
     end
-
-    gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    gfx.setFont(nil)
+    
+    -- Draw the upgrade screen image on top
+    if upgradeScreenImage then
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        upgradeScreenImage:draw(0, 0)
+    end
+    
+    -- Draw placeholder arrow for selection
+    local selShape = shapes[State.selectedUpgrade]
+    if selShape then
+        gfx.setColor(gfx.kColorWhite)
+        local arrowX = selShape.x + (selShape.w / 2)
+        local arrowY = selShape.y - 15
+        gfx.fillTriangle(arrowX - 5, arrowY, arrowX + 5, arrowY, arrowX, arrowY + 10)
+    end
 end
 
 function drawMusicScreen()

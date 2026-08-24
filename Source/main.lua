@@ -42,6 +42,7 @@ dockBubbleImageTable = gfx.imagetable.new('images/fish/dockbubble-sprite')
 tapeImage = gfx.image.new('images/menu/tape_invert')
 textboxImage = gfx.image.new('images/menu/textbox')
 coinImage = gfx.image.new('images/menu/coin')
+upgradeScreenImage = gfx.image.new('images/menu/upgrade_screen')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
