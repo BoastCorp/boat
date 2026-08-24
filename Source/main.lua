@@ -203,9 +203,31 @@ local function drawContent()
         drawOffScreenFishIndicators()
     end
 
-    -- Money display
-    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-    gfx.drawText("$" .. State.money, 4, 4)
+    -- Money display in top right with coin
+    if coinImage then
+        local text = tostring(State.money)
+        local activeFont = roobert11
+        gfx.setFont(activeFont)
+        
+        local textW = activeFont:getTextWidth(text)
+        local coinW, coinH = coinImage:getSize()
+        local space = 4
+        local totalW = textW + space + coinW
+        
+        local x = 400 - 8 - totalW
+        local y = 4
+        
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawText(text, x, y)
+        
+        local coinY = y + (activeFont:getHeight() - coinH) / 2
+        gfx.setImageDrawMode(gfx.kDrawModeCopy)
+        coinImage:draw(x + textW + space, coinY)
+        gfx.setFont(nil)
+    else
+        gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+        gfx.drawText("$" .. State.money, 4, 4)
+    end
 
     -- Boost Cooldown Indicator
     drawBoostIndicator()
