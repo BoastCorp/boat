@@ -41,6 +41,7 @@ dockObjectImageTable = gfx.imagetable.new('images/fish/littleguyswim_sprite')
 dockBubbleImageTable = gfx.imagetable.new('images/fish/dockbubble-sprite')
 tapeImage = gfx.image.new('images/menu/tape_invert')
 textboxImage = gfx.image.new('images/menu/textbox')
+coinImage = gfx.image.new('images/menu/coin')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
@@ -49,6 +50,7 @@ local boatImage = gfx.image.new('images/boat/boat40x40')
 roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
 roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
 asheville14 = gfx.font.new('System/Fonts/Asheville-Sans-14-Bold')
+roobert8 = gfx.font.new('System/Fonts/Quickboot-7-Medium')
 
 -- Cache for fish images
 fishAnimCache = {}

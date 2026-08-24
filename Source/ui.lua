@@ -503,13 +503,30 @@ function updateFloatingTexts()
 end
 
 function drawFloatingTexts()
-    gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-    gfx.setFont(roobert11)
+    local activeFont = roobert8 or roobert11
+    gfx.setFont(activeFont)
     for _, ft in ipairs(State.floatingTexts) do
-        local textW = roobert11:getTextWidth(ft.text)
-        local x = 200 - (textW / 2)
-        local y = 120 + ft.yOffset
-        gfx.drawText(ft.text, x, y)
+        if ft.showCoin and coinImage then
+            local textW = activeFont:getTextWidth(ft.text)
+            local coinW, coinH = coinImage:getSize()
+            local space = 4
+            local totalW = textW + space + coinW
+            local x = 200 - (totalW / 2)
+            local y = 120 + ft.yOffset
+            
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            gfx.drawText(ft.text, x, y + 1)
+            
+            local coinY = y + (activeFont:getHeight() - coinH) / 2
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+            coinImage:draw(x + textW + space, coinY)
+        else
+            local textW = activeFont:getTextWidth(ft.text)
+            local x = 200 - (textW / 2)
+            local y = 120 + ft.yOffset
+            gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+            gfx.drawText(ft.text, x, y + 1)
+        end
     end
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.setFont(nil)

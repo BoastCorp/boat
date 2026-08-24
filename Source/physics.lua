@@ -508,9 +508,9 @@ function updatePhysics()
                     
                     -- Spawn floating texts relative to boat
                     if isBoostCatch then
-                        table.insert(State.floatingTexts, { text = "Boost Catch! +$" .. netPayout, yOffset = -25, timer = 50 })
+                        table.insert(State.floatingTexts, { text = "Boost Catch! " .. netPayout, showCoin = true, yOffset = -25, timer = 50 })
                     else
-                        table.insert(State.floatingTexts, { text = "+$" .. netPayout, yOffset = -25, timer = 50 })
+                        table.insert(State.floatingTexts, { text = tostring(netPayout), showCoin = true, yOffset = -25, timer = 50 })
                     end
                     
                     if caught > 1 then
