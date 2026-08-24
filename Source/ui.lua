@@ -79,14 +79,14 @@ local function drawSparks()
     if not State.sparks then
         State.sparks = {}
         for t = 1, 3 do
-            for i = 1, 5 do
+            for i = 1, 10 do
                 table.insert(State.sparks, {
                     imgIndex = t,
                     x = math.random(0, 400),
                     y = math.random(0, 240),
                     frame = 1,
                     timer = math.random(0, 100),
-                    speed = math.random(3, 7)
+                    speed = math.random(2, 5)
                 })
             end
         end
