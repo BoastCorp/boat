@@ -154,10 +154,15 @@ function drawUpgradeScreen()
     
     gfx.setColor(gfx.kColorWhite)
     
-    for i, upgrade in ipairs(State.upgrades) do
-        if i <= 4 and upgrade.level > 0 then
-            local shape = shapes[i]
-            local maxLevel = getMaxUpgradeLevel(i)
+    local visualToState = {3, 2, 1, 4}
+    
+    for visualIndex = 1, 4 do
+        local stateIndex = visualToState[visualIndex]
+        local upgrade = State.upgrades[stateIndex]
+        
+        if upgrade and upgrade.level > 0 then
+            local shape = shapes[visualIndex]
+            local maxLevel = getMaxUpgradeLevel(stateIndex)
             local percentage = upgrade.level / maxLevel
             local fillHeight = shape.h * percentage
             
@@ -202,10 +207,24 @@ function drawUpgradeScreen()
         end
     end
     
-    -- Draw the upgrade screen image on top
-    if upgradeScreenImage then
-        gfx.setImageDrawMode(gfx.kDrawModeCopy)
-        upgradeScreenImage:draw(0, 0)
+    -- Draw the animated upgrade sprites on top
+    local frameDuration = 5
+    State.upgradeFrameCounter = ((State.upgradeFrameCounter or 0) + 1)
+    local currentFrame = (math.floor(State.upgradeFrameCounter / frameDuration) % 4) + 1
+    local sourceX = (currentFrame - 1) * 400
+    
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    if upgradeLineSprite then
+        upgradeLineSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
+    end
+    if upgradeSpeedSprite then
+        upgradeSpeedSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
+    end
+    if upgradeValueSprite then
+        upgradeValueSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
+    end
+    if upgradeBoostSprite then
+        upgradeBoostSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
     end
     
     -- Draw placeholder arrow for selection

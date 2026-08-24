@@ -104,14 +104,17 @@ function handleUpgradeInput()
 
         sel = State.selectedUpgrade
         if playdate.buttonJustPressed(playdate.kButtonA) then
-            local nextLevel = State.upgrades[sel].level + 1
-            local maxLevel = getMaxUpgradeLevel(sel)
+            local visualToState = {3, 2, 1, 4}
+            local stateIdx = visualToState[sel]
+            
+            local nextLevel = State.upgrades[stateIdx].level + 1
+            local maxLevel = getMaxUpgradeLevel(stateIdx)
             if nextLevel <= maxLevel then
-                local cost = calculateUpgradeCost(sel, nextLevel)
+                local cost = calculateUpgradeCost(stateIdx, nextLevel)
                 if State.money >= cost then
                     State.money = State.money - cost
-                    State.upgrades[sel].level = nextLevel
-                    Telemetry.logUpgrade(State.upgrades[sel].name, nextLevel, cost, State.money)
+                    State.upgrades[stateIdx].level = nextLevel
+                    Telemetry.logUpgrade(State.upgrades[stateIdx].name, nextLevel, cost, State.money)
                 end
             end
         end
