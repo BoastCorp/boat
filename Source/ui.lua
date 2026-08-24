@@ -50,27 +50,26 @@ function drawBoostIndicator()
     local y = 240 - margin
     local radius = 12
     
+    -- Draw black background circle with a white outline
+    gfx.setColor(gfx.kColorBlack)
+    gfx.fillCircleAtPoint(x, y, radius)
+    
     gfx.setLineWidth(2)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.drawCircleAtPoint(x, y, radius)
     
     if boat.boostCooldownFrames > 0 and cooldownMax > 0 then
-        -- Draw empty-ish circle with progress fill
-        gfx.setColor(gfx.kColorWhite)
-        gfx.drawCircleAtPoint(x, y, radius)
-        
         local fraction = boat.boostCooldownFrames / cooldownMax
         -- Fill up as it recharges: from 0 (top) around 360 degrees
         local d = (radius - 3) * 2
         gfx.fillEllipseInRect(x - (radius - 3), y - (radius - 3), d, d, 0, 360 * (1 - fraction))
     elseif boat.boostFrames > 0 then
-        -- Boost active: solid white circle with inverted dot?
-        gfx.setColor(gfx.kColorWhite)
+        -- Boost active: solid white circle with inverted dot
         gfx.fillCircleAtPoint(x, y, radius)
         gfx.setColor(gfx.kColorBlack)
         gfx.fillCircleAtPoint(x, y, 4)
     else
-        -- Ready to use: double circle or something distinct
-        gfx.setColor(gfx.kColorWhite)
-        gfx.drawCircleAtPoint(x, y, radius)
+        -- Ready to use: small white dot inside
         gfx.fillCircleAtPoint(x, y, radius - 5)
     end
 end
