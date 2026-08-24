@@ -42,10 +42,19 @@ dockBubbleImageTable = gfx.imagetable.new('images/fish/dockbubble-sprite')
 tapeImage = gfx.image.new('images/menu/tape_invert')
 textboxImage = gfx.image.new('images/menu/textbox')
 coinImage = gfx.image.new('images/menu/coin')
+spark1Image = gfx.image.new('images/menu/spark1')
+spark2Image = gfx.image.new('images/menu/spark2')
+spark3Image = gfx.image.new('images/menu/spark3')
+spark4Image = gfx.image.new('images/menu/spark4')
 upgradeLineSprite = gfx.image.new('images/menu/upgrade_screen_line_sprite')
 upgradeSpeedSprite = gfx.image.new('images/menu/upgrade_screen_speed_sprite')
 upgradeValueSprite = gfx.image.new('images/menu/upgrade_screen_value_sprite')
 upgradeBoostSprite = gfx.image.new('images/menu/upgrade_screen_boost_sprite')
+
+upgradeLineTextSprite = gfx.image.new('images/menu/upgrade_screen_line_text_sprite')
+upgradeSpeedTextSprite = gfx.image.new('images/menu/upgrade_screen_speed_text_sprite')
+upgradeValueTextSprite = gfx.image.new('images/menu/upgrade_screen_value_text_sprite')
+upgradeBoostTextSprite = gfx.image.new('images/menu/upgrade_screen_boost_text_sprite')
 
 -- Load boat sprite (40x40 single image)
 local boatImage = gfx.image.new('images/boat/boat40x40')
@@ -361,6 +370,28 @@ function playdate.update()
         -- Fallback: unknown screen
         gfx.clear(gfx.kColorWhite)
         gfx.drawText("Error: Unknown Screen '" .. tostring(State.currentScreen) .. "'", 10, 100)
+    end
+    
+    if State.transition and State.transition.active then
+        State.transition.progress = State.transition.progress + State.transition.speed
+        if State.transition.progress >= 1.0 then
+            if State.transition.phase == 1 then
+                State.currentScreen = State.transition.targetScreen
+                State.transition.phase = 2
+                State.transition.progress = 0
+            else
+                State.transition.active = false
+            end
+        end
+        
+        gfx.setColor(gfx.kColorBlack)
+        if State.transition.phase == 1 then
+            local h = 240 * State.transition.progress
+            gfx.fillRect(0, 0, 400, h)
+        else
+            local h = 240 * (1 - State.transition.progress)
+            gfx.fillRect(0, 0, 400, h)
+        end
     end
 end
 function calculateUpgradeCost(upgradeIndex, internalLevel)

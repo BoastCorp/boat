@@ -75,6 +75,46 @@ function drawBoostIndicator()
     end
 end
 
+local function drawSparks()
+    if not State.sparks then
+        State.sparks = {}
+        for t = 1, 3 do
+            for i = 1, 5 do
+                table.insert(State.sparks, {
+                    imgIndex = t,
+                    x = math.random(0, 400),
+                    y = math.random(0, 240),
+                    frame = 1,
+                    timer = math.random(0, 100),
+                    speed = math.random(3, 7)
+                })
+            end
+        end
+    end
+
+    local imgs = {spark1Image, spark2Image, spark3Image}
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+    for _, s in ipairs(State.sparks) do
+        s.timer = s.timer - 1
+        if s.timer <= 0 then
+            s.frame = s.frame + 1
+            s.timer = s.speed
+            if s.frame > 4 then
+                s.frame = 1
+                s.timer = math.random(50, 200)
+                s.x = math.random(0, 400)
+                s.y = math.random(0, 240)
+            end
+        end
+        
+        local img = imgs[s.imgIndex]
+        if img and s.frame > 1 then
+            local sx = (s.frame - 1) * 20
+            img:draw(s.x, s.y, gfx.kImageUnflipped, sx, 0, 20, 20)
+        end
+    end
+end
+
 function drawDockScreen()
     gfx.clear(gfx.kColorBlack)
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
@@ -156,6 +196,21 @@ function drawUpgradeScreen()
     
     local visualToState = {3, 2, 1, 4}
     
+    local function getTremble(visualIndex)
+        local stateIndex = visualToState[visualIndex]
+        local upgrade = State.upgrades[stateIndex]
+        if upgrade and upgrade.level == getMaxUpgradeLevel(stateIndex) then
+            local ms = playdate.getCurrentTimeMilliseconds()
+            local phaseX = (ms * 0.05) + (visualIndex * 2.1)
+            local phaseY = (ms * 0.06) + (visualIndex * 3.7)
+            local tx, ty = 0, 0
+            if math.sin(phaseX) > 0.8 then tx = 1 elseif math.sin(phaseX) < -0.8 then tx = -1 end
+            if math.cos(phaseY) > 0.8 then ty = 1 elseif math.cos(phaseY) < -0.8 then ty = -1 end
+            return tx, ty
+        end
+        return 0, 0
+    end
+    
     for visualIndex = 1, 4 do
         local stateIndex = visualToState[visualIndex]
         local upgrade = State.upgrades[stateIndex]
@@ -166,42 +221,43 @@ function drawUpgradeScreen()
             local percentage = upgrade.level / maxLevel
             local fillHeight = shape.h * percentage
             
+            local tx, ty = getTremble(visualIndex)
+            
             local pts = {}
             -- Bottom-Left
-            table.insert(pts, shape.x)
-            table.insert(pts, shape.y + shape.h)
+            table.insert(pts, shape.x + tx)
+            table.insert(pts, shape.y + shape.h + ty)
 
             local resolution = 4
             local time = playdate.getCurrentTimeMilliseconds()
-            -- Adjust phase speed for wave movement from right to left
             local phase = time * 0.006
             local amplitude = 3
             local waveLength = 60
             
-            local baseY = shape.y + shape.h - fillHeight
+            local baseY = shape.y + shape.h - fillHeight + ty
 
             -- Top edge with sine wave
             for px = shape.x, shape.x + shape.w, resolution do
                 local waveY = math.sin(((px - shape.x) / waveLength) * math.pi * 2 + phase) * amplitude
                 local topY = baseY + waveY
-                if topY > shape.y + shape.h then topY = shape.y + shape.h end
-                table.insert(pts, px)
+                if topY > shape.y + shape.h + ty then topY = shape.y + shape.h + ty end
+                table.insert(pts, px + tx)
                 table.insert(pts, topY)
             end
 
             -- Ensure right edge is exactly hit
-            if pts[#pts - 1] < shape.x + shape.w then
+            if pts[#pts - 1] - tx < shape.x + shape.w then
                 local px = shape.x + shape.w
                 local waveY = math.sin(((px - shape.x) / waveLength) * math.pi * 2 + phase) * amplitude
                 local topY = baseY + waveY
-                if topY > shape.y + shape.h then topY = shape.y + shape.h end
-                table.insert(pts, px)
+                if topY > shape.y + shape.h + ty then topY = shape.y + shape.h + ty end
+                table.insert(pts, px + tx)
                 table.insert(pts, topY)
             end
 
             -- Bottom-Right
-            table.insert(pts, shape.x + shape.w)
-            table.insert(pts, shape.y + shape.h)
+            table.insert(pts, shape.x + shape.w + tx)
+            table.insert(pts, shape.y + shape.h + ty)
 
             gfx.fillPolygon(table.unpack(pts))
         end
@@ -214,38 +270,95 @@ function drawUpgradeScreen()
     local sourceX = (currentFrame - 1) * 400
     
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
-    if upgradeLineSprite then
-        upgradeLineSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
-    end
-    if upgradeSpeedSprite then
-        upgradeSpeedSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
-    end
-    if upgradeValueSprite then
-        upgradeValueSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
-    end
-    if upgradeBoostSprite then
-        upgradeBoostSprite:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
+    local sel = State.selectedUpgrade
+    
+    local function drawShapeSprite(sprite, index)
+        if not sprite then return end
+        local drawSourceX = (index == sel) and sourceX or 0
+        local tx, ty = getTremble(index)
+        sprite:draw(tx, ty, gfx.kImageUnflipped, drawSourceX, 0, 400, 240)
     end
     
-    -- Draw placeholder arrow for selection
-    local selShape = shapes[State.selectedUpgrade]
-    if selShape then
-        gfx.setColor(gfx.kColorWhite)
-        local arrowX = selShape.x + (selShape.w / 2)
-        local arrowY = selShape.y - 15
-        gfx.fillTriangle(arrowX - 5, arrowY, arrowX + 5, arrowY, arrowX, arrowY + 10)
+    drawShapeSprite(upgradeLineSprite, 1)
+    drawShapeSprite(upgradeSpeedSprite, 2)
+    drawShapeSprite(upgradeValueSprite, 3)
+    drawShapeSprite(upgradeBoostSprite, 4)
+    -- Draw text sprites (animate only if selected)
+    
+    local function drawTextSprite(sprite, index)
+        if not sprite then return end
+        local drawSourceX = (index == sel) and sourceX or 0
+        local tx, ty = getTremble(index)
+        sprite:draw(tx, ty, gfx.kImageUnflipped, drawSourceX, 0, 400, 240)
     end
+    
+    drawTextSprite(upgradeLineTextSprite, 1)
+    drawTextSprite(upgradeSpeedTextSprite, 2)
+    drawTextSprite(upgradeValueTextSprite, 3)
+    drawTextSprite(upgradeBoostTextSprite, 4)
+    
+    -- Draw costs beneath shapes
+    gfx.setFont(roobert11)
+    for visualIndex = 1, 4 do
+        local stateIndex = visualToState[visualIndex]
+        local upgrade = State.upgrades[stateIndex]
+        if upgrade then
+            local maxLevel = getMaxUpgradeLevel(stateIndex)
+            if upgrade.level < maxLevel then
+                local shape = shapes[visualIndex]
+                local costVal = calculateUpgradeCost(stateIndex, upgrade.level + 1)
+                local text = tostring(costVal)
+                
+                local textW = roobert11:getTextWidth(text)
+                local coinW, coinH = 0, 0
+                if coinImage then
+                    coinW, coinH = coinImage:getSize()
+                end
+                
+                local space = 2
+                local totalW = textW + space + coinW
+                
+                local tx, ty = getTremble(visualIndex)
+                local textX = shape.x + (shape.w / 2) - (totalW / 2) + tx
+                local textY = 212 + ty  -- Fixed baseline for all costs
+                
+                gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+                gfx.drawText(text, textX, textY)
+                
+                if coinImage then
+                    local coinY = textY + (roobert11:getHeight() - coinH) / 2
+                    gfx.setImageDrawMode(gfx.kDrawModeCopy)
+                    coinImage:draw(textX + textW + space, coinY)
+                end
+            end
+        end
+    end
+    gfx.setFont(nil)
+    gfx.setImageDrawMode(gfx.kDrawModeCopy)
 end
 
 function drawMusicScreen()
     gfx.clear(gfx.kColorBlack)
+    
+    drawSparks()
+    
+    if spark4Image and State.spark4StartTime then
+        local ms = playdate.getCurrentTimeMilliseconds()
+        local animTime = ms - State.spark4StartTime
+        local frameDuration = 70 -- 70ms per frame for fast animation
+        local currentFrame = math.floor(animTime / frameDuration) + 1
+        
+        if currentFrame <= 7 then
+            gfx.setImageDrawMode(gfx.kDrawModeCopy)
+            local sourceX = (currentFrame - 1) * 400
+            spark4Image:draw(0, 0, gfx.kImageUnflipped, sourceX, 0, 400, 240)
+        else
+            State.spark4StartTime = nil -- end animation
+        end
+    end
+    
     gfx.setColor(gfx.kColorWhite)
     gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-
-    -- Header
-    gfx.setFont(roobert24)
-    gfx.drawText("SOUNDTRACK", 120, 10)
-    gfx.drawLine(0, 40, 400, 40)
 
     -- 3x2 Grid (3 columns, 2 rows)
     local colPadding = 30
@@ -253,7 +366,7 @@ function drawMusicScreen()
     local tapeW, tapeH = 75, 74
     local gridWidth = (3 * tapeW) + (2 * colPadding)
     local startX = (400 - gridWidth) / 2
-    local startY = 55
+    local startY = 40
 
     for i = 1, 6 do
         local col = (i - 1) % 3
@@ -263,33 +376,33 @@ function drawMusicScreen()
 
         local isCursor = (i == State.musicSelectionIndex)
         local isSelected = (i == State.selectedMusic)
-
-        -- Selection highlight (box behind cursor)
+        
+        local floatY = 0
         if isCursor then
-            gfx.setLineWidth(3)
-            gfx.drawRect(x - 5, y - 5, tapeW + 10, tapeH + 10)
+            local ms = playdate.getCurrentTimeMilliseconds()
+            local period = 1200 -- ms for a full up-and-down cycle
+            local t = (ms % period) / (period / 2) -- goes 0 to 2
+            if t > 1 then t = 2 - t end -- ping pong 0 to 1 to 0
+            floatY = (t - 0.5) * 10 -- range from -5 to 5
         end
+        
+        local drawY = y + floatY
 
         -- Draw Tape (Full size 75x74)
         if tapeImage then
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
-            tapeImage:draw(x, y)
+            tapeImage:draw(x, drawY)
             gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
         else
-            gfx.drawRect(x, y, tapeW, tapeH)
-            gfx.drawText("TAPE " .. i, x + 5, y + 25)
+            gfx.drawRect(x, drawY, tapeW, tapeH)
+            gfx.drawText("TAPE " .. i, x + 5, drawY + 25)
         end
 
         -- "Playing" or "Active" indicator
         if isSelected then
-            gfx.fillCircleAtPoint(x + tapeW - 8, y + 8, 5)
+            gfx.fillCircleAtPoint(x + tapeW - 8, drawY + 8, 5)
         end
     end
-
-    -- Footer
-    gfx.drawLine(0, 210, 400, 210)
-    gfx.setFont(roobert11)
-    gfx.drawText("D-Pad: Navigate   A: Select Track   B: Back", 100, 218)
     
     gfx.setImageDrawMode(gfx.kDrawModeCopy)
     gfx.setFont(nil)

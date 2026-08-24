@@ -1,17 +1,19 @@
 import "state"
 
 function handleInput()
+    if State.transition and State.transition.active then return end
+    
     -- 1. Global / Secret Menu Toggle
     if (playdate.buttonJustPressed(playdate.kButtonA) and playdate.buttonIsPressed(playdate.kButtonB)) or
        (playdate.buttonJustPressed(playdate.kButtonB) and playdate.buttonIsPressed(playdate.kButtonA)) then
-        State.currentScreen = "secret_menu"
+        startTransition("secret_menu")
         return
     end
 
     -- 2. Debug Menu Toggle
     if playdate.buttonJustPressed(playdate.kButtonMenu) then
         if playdate.buttonIsPressed(playdate.kButtonA) then
-            State.currentScreen = "debug"
+            startTransition("debug")
         elseif playdate.buttonIsPressed(playdate.kButtonB) then
             for i = 1, #State.upgrades do State.upgrades[i].level = 0 end
             State.money = 0
@@ -45,7 +47,7 @@ function handleGameInput()
             local moneyEarned = State.hold * (1 + getEffectiveUpgradeLevel(1))
             Telemetry.logReturnDock(State.hold, moneyEarned)
             State.isPaused = false
-            State.currentScreen = "dock"
+            startTransition("dock")
         elseif playdate.buttonJustPressed(playdate.kButtonB) then
             resetRound()
         end
@@ -82,18 +84,18 @@ function handleDockInput()
     elseif playdate.buttonJustPressed(playdate.kButtonA) then
         if State.dockMenuIndex == 1 then
             resetRound()
-            State.currentScreen = "game"
+            startTransition("game")
         elseif State.dockMenuIndex == 2 then
-            State.currentScreen = "upgrade"
+            startTransition("upgrade")
         elseif State.dockMenuIndex == 3 then
-            State.currentScreen = "music"
+            startTransition("music")
         end
     end
 end
 
 function handleUpgradeInput()
     if playdate.buttonJustPressed(playdate.kButtonB) then
-        State.currentScreen = "dock"
+        startTransition("dock")
     else
         local sel = State.selectedUpgrade
         if playdate.buttonJustPressed(playdate.kButtonLeft) then
@@ -123,7 +125,7 @@ end
 
 function handleMusicInput()
     if playdate.buttonJustPressed(playdate.kButtonB) then
-        State.currentScreen = "dock"
+        startTransition("dock")
     else
         local sel = State.musicSelectionIndex
         if playdate.buttonJustPressed(playdate.kButtonUp) then
@@ -138,6 +140,7 @@ function handleMusicInput()
 
         if playdate.buttonJustPressed(playdate.kButtonA) then
             State.selectedMusic = State.musicSelectionIndex
+            State.spark4StartTime = playdate.getCurrentTimeMilliseconds()
         end
     end
 end
@@ -221,9 +224,9 @@ function handleSecretMenuInput()
 
     if playdate.buttonJustPressed(playdate.kButtonA) then
         resetRound()
-        State.currentScreen = "game"
+        startTransition("game")
     elseif playdate.buttonJustPressed(playdate.kButtonB) then
-        State.currentScreen = "game"
+        startTransition("game")
     end
 end
 
@@ -249,6 +252,6 @@ function handleDebugMenuInput()
             end
         end
     elseif playdate.buttonJustPressed(playdate.kButtonB) then
-        State.currentScreen = "game"
+        startTransition("game")
     end
 end

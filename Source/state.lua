@@ -67,8 +67,19 @@ State = {
     totalRunsPlayed = 0,
     totalFramesPlayed = 0,
     floatingTexts = {},
-    infiniteMoney = false,
+    infiniteMoney = true,
+    transition = { active = false }
 }
+
+function startTransition(targetScreen)
+    State.transition = {
+        active = true,
+        phase = 1,
+        progress = 0,
+        speed = 0.08, -- Adjust speed (0.08 = ~12 frames per phase)
+        targetScreen = targetScreen
+    }
+end
 
 function getEffectiveUpgradeLevel(baseIndex)
     return State.upgrades[baseIndex].level
