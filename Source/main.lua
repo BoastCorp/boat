@@ -53,7 +53,7 @@ asheville14 = gfx.font.new('System/Fonts/Asheville-Sans-14-Bold')
 roobert8 = gfx.font.new('System/Fonts/Quickboot-7-Medium')
 
 -- Cache for fish images
-fishAnimCache = {}
+fishImageCache = {}
 
 preRenderFishImages()
 
@@ -174,7 +174,7 @@ local function drawContent()
             local dx, dy = f.x - bx, f.y - by
             if dx > -220 and dx < 220 and dy > -140 and dy < 140 then
                 local fx, fy = 200 + dx, 120 + dy
-                drawWavyFish(fx, fy, f.size, f.angle or 0)
+                drawFish(fx, fy, f.size, f.angle or 0)
             end
         end
     end
