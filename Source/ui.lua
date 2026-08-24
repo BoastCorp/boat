@@ -155,14 +155,50 @@ function drawUpgradeScreen()
     gfx.setColor(gfx.kColorWhite)
     
     for i, upgrade in ipairs(State.upgrades) do
-        if i <= 4 then
+        if i <= 4 and upgrade.level > 0 then
             local shape = shapes[i]
             local maxLevel = getMaxUpgradeLevel(i)
             local percentage = upgrade.level / maxLevel
             local fillHeight = shape.h * percentage
             
-            -- Draw white rectangle from bottom to top
-            gfx.fillRect(shape.x, shape.y + shape.h - fillHeight, shape.w, fillHeight)
+            local pts = {}
+            -- Bottom-Left
+            table.insert(pts, shape.x)
+            table.insert(pts, shape.y + shape.h)
+
+            local resolution = 4
+            local time = playdate.getCurrentTimeMilliseconds()
+            -- Adjust phase speed for wave movement from right to left
+            local phase = time * 0.006
+            local amplitude = 3
+            local waveLength = 60
+            
+            local baseY = shape.y + shape.h - fillHeight
+
+            -- Top edge with sine wave
+            for px = shape.x, shape.x + shape.w, resolution do
+                local waveY = math.sin(((px - shape.x) / waveLength) * math.pi * 2 + phase) * amplitude
+                local topY = baseY + waveY
+                if topY > shape.y + shape.h then topY = shape.y + shape.h end
+                table.insert(pts, px)
+                table.insert(pts, topY)
+            end
+
+            -- Ensure right edge is exactly hit
+            if pts[#pts - 1] < shape.x + shape.w then
+                local px = shape.x + shape.w
+                local waveY = math.sin(((px - shape.x) / waveLength) * math.pi * 2 + phase) * amplitude
+                local topY = baseY + waveY
+                if topY > shape.y + shape.h then topY = shape.y + shape.h end
+                table.insert(pts, px)
+                table.insert(pts, topY)
+            end
+
+            -- Bottom-Right
+            table.insert(pts, shape.x + shape.w)
+            table.insert(pts, shape.y + shape.h)
+
+            gfx.fillPolygon(table.unpack(pts))
         end
     end
     
