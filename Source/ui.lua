@@ -621,7 +621,13 @@ function drawFloatingTexts()
             local textW = activeFont:getTextWidth(ft.text)
             local coinW, coinH = coinImage:getSize()
             local space = 4
-            local totalW = textW + space + coinW
+            
+            local suffixW = 0
+            if ft.suffix then
+                suffixW = space + activeFont:getTextWidth(ft.suffix)
+            end
+            
+            local totalW = textW + space + coinW + suffixW
             local x = 200 - (totalW / 2)
             local y = 120 + ft.yOffset
             
@@ -629,8 +635,14 @@ function drawFloatingTexts()
             gfx.drawText(ft.text, x, y + 1)
             
             local coinY = y + (activeFont:getHeight() - coinH) / 2
+            local coinX = x + textW + space
             gfx.setImageDrawMode(gfx.kDrawModeCopy)
-            coinImage:draw(x + textW + space, coinY)
+            coinImage:draw(coinX, coinY)
+            
+            if ft.suffix then
+                gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
+                gfx.drawText(ft.suffix, coinX + coinW + space, y + 1)
+            end
         else
             local textW = activeFont:getTextWidth(ft.text)
             local x = 200 - (textW / 2)

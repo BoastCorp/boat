@@ -496,8 +496,10 @@ function updatePhysics()
                     local boostMult = isBoostCatch and 1.5 or 1.0
                     local finalMult = multiCatchMult * boostMult
                     
+                    local baseTotal = 0
                     local netPayout = 0
                     for _, item in ipairs(caughtFishList) do
+                        baseTotal = baseTotal + item.val
                         local finalVal = math.floor(item.val * finalMult)
                         netPayout = netPayout + finalVal
                         Telemetry.logCatch(item.idx, State.hold + caught, 999, item.size, finalVal, 0, i, #wake)
@@ -508,7 +510,7 @@ function updatePhysics()
                     
                     -- Spawn floating texts relative to boat
                     if isBoostCatch then
-                        table.insert(State.floatingTexts, { text = "Boost Catch! " .. netPayout, showCoin = true, yOffset = -25, timer = 50 })
+                        table.insert(State.floatingTexts, { text = tostring(baseTotal), suffix = "x " .. finalMult, showCoin = true, yOffset = -25, timer = 50 })
                     else
                         table.insert(State.floatingTexts, { text = tostring(netPayout), showCoin = true, yOffset = -25, timer = 50 })
                     end

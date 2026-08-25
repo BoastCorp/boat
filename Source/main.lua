@@ -56,8 +56,8 @@ upgradeSpeedTextSprite = gfx.image.new('images/menu/upgrade_screen_speed_text_sp
 upgradeValueTextSprite = gfx.image.new('images/menu/upgrade_screen_value_text_sprite')
 upgradeBoostTextSprite = gfx.image.new('images/menu/upgrade_screen_boost_text_sprite')
 
--- Load boat sprite (40x40 single image)
-local boatImage = gfx.image.new('images/boat/boat40x40')
+-- Load boat sprite (now using boat240x40 which is actually a 40x40 image)
+boatImage = gfx.image.new('images/boat/boat240x40')
 
 -- Load fonts for UI
 roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
