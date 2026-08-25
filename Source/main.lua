@@ -61,9 +61,28 @@ boatImage = gfx.image.new('images/boat/boat240x40')
 
 -- Load fonts for UI
 roobert24 = gfx.font.new('fonts/Roobert-24-Medium')
-roobert11 = gfx.font.new('fonts/Roobert-11-Medium')
-asheville14 = gfx.font.new('System/Fonts/Asheville-Sans-14-Bold')
-roobert8 = gfx.font.new('System/Fonts/Quickboot-7-Medium')
+pedallica16Font = gfx.font.new('fonts/font-pedallica-fun-16')
+pedallica14Font = gfx.font.new('fonts/font-pedallica-fun-14')
+pedallicaFont = gfx.font.new('fonts/pedallica')
+roobert11 = pedallica16Font or pedallica14Font or pedallicaFont or gfx.font.new('fonts/Roobert-11-Medium')
+asheville14 = pedallica16Font or gfx.font.new('System/Fonts/Asheville-Sans-14-Bold')
+roobert8 = gfx.font.new('System/Fonts/Quickboot-7-Medium') or roobert11
+
+-- Set default system font
+if roobert11 then
+    gfx.setFont(roobert11)
+end
+
+-- Load custom fonts
+doubleTimeFont = gfx.font.new('fonts/double_time')
+kapelFont = gfx.font.new('fonts/kapel')
+kapelDoubleupFont = gfx.font.new('fonts/kapel_doubleup')
+kapelDoubleupOutlineFont = gfx.font.new('fonts/kapel_doubleup_outline')
+kduReversedFont = gfx.font.new('fonts/kdu_reversed')
+lepakFont = gfx.font.new('fonts/lepak')
+pedallicaFont = gfx.font.new('fonts/pedallica')
+timesNewRallyFont = gfx.font.new('fonts/times_new_rally')
+yllarWenSemitFont = gfx.font.new('fonts/yllar_wen_semit')
 
 -- Cache for fish images
 fishImageCache = {}
@@ -224,7 +243,7 @@ local function drawContent()
         
         local textW = activeFont:getTextWidth(text)
         local coinW, coinH = coinImage:getSize()
-        local space = 4
+        local space = 5
         local totalW = textW + space + coinW
         
         local x = 400 - 8 - totalW
@@ -426,8 +445,8 @@ function resetRound()
     State.wake = {}
     State.boat.wakeLength = 0
     
-    -- Find a safe spawn point for the boat starting at 852, 1065
-    local startX, startY = 852, 1065
+    -- Find a safe spawn point for the boat starting at 700, 700
+    local startX, startY = 700, 700
     if isInAnyObstacle(startX, startY) then
         -- Spiral outward to find nearest water
         local found = false

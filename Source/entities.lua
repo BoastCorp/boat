@@ -4,17 +4,22 @@ import "physics"
 
 function preRenderFishImages()
     fishImageCache = {}
+    local numRotations = 32
     for _, size in ipairs(State.fishSizes) do
         local w = math.ceil(size * 1.5) + 4
         local h = math.ceil(size * 0.7) + 4
-        local img = gfx.image.new(w, h, gfx.kColorClear)
+        local baseImg = gfx.image.new(w, h, gfx.kColorClear)
         
-        gfx.pushContext(img)
+        gfx.pushContext(baseImg)
             gfx.setColor(gfx.kColorWhite)
             gfx.fillEllipseInRect(2, 2, w-4, h-4)
         gfx.popContext()
         
-        fishImageCache[size] = img
+        fishImageCache[size] = {}
+        for r = 0, numRotations - 1 do
+            local angle = (r / numRotations) * 360
+            fishImageCache[size][r] = baseImg:rotatedImage(angle)
+        end
     end
 end
 
@@ -302,9 +307,21 @@ function updateFishMovement()
 end
 
 function drawFish(fx, fy, size, angle)
-    local img = fishImageCache[size]
-    if img then
-        img:drawRotated(fx, fy, angle)
+    local rotations = fishImageCache[size]
+    if rotations then
+        local numRotations = 32
+        -- Normalize angle to 0-360
+        local normAngle = angle % 360
+        if normAngle < 0 then normAngle = normAngle + 360 end
+        
+        -- Find nearest rotation index
+        local idx = math.floor((normAngle / 360) * numRotations + 0.5) % numRotations
+        local img = rotations[idx]
+        
+        if img then
+            local w, h = img:getSize()
+            img:draw(fx - math.floor(w/2), fy - math.floor(h/2))
+        end
     end
 end
 

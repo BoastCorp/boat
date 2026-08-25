@@ -314,7 +314,7 @@ function drawUpgradeScreen()
                     coinW, coinH = coinImage:getSize()
                 end
                 
-                local space = 2
+                local space = 3
                 local totalW = textW + space + coinW
                 
                 local tx, ty = getTremble(visualIndex)
@@ -620,7 +620,7 @@ function drawFloatingTexts()
         if ft.showCoin and coinImage then
             local textW = activeFont:getTextWidth(ft.text)
             local coinW, coinH = coinImage:getSize()
-            local space = 4
+            local space = 5
             
             local suffixW = 0
             if ft.suffix then
