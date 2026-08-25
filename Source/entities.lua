@@ -172,6 +172,58 @@ function spawnFish()
     end
 end
 
+function respawnFish(size)
+    local minX, maxX = 200, 1200
+    local minY, maxY = 200, 1200
+    local bx, by = State.boat.x, State.boat.y
+    
+    local rx, ry
+    local attempts = 0
+    local placed = false
+    
+    while not placed and attempts < 200 do
+        rx = math.random(minX, maxX)
+        ry = math.random(minY, maxY)
+        attempts = attempts + 1
+        
+        -- Must be outside the visible screen (400x240 screen centered at boat)
+        local dx = math.abs(rx - bx)
+        local dy = math.abs(ry - by)
+        local isOffScreen = (dx > 230 or dy > 150)
+        
+        if isOffScreen and isSafeWater(rx, ry, 50) and not isOverlappingExistingFish(rx, ry, size) then
+            placed = true
+        end
+    end
+    
+    -- Fallback: slightly smaller buffer if needed
+    if not placed then
+        attempts = 0
+        while not placed and attempts < 200 do
+            rx = math.random(minX, maxX)
+            ry = math.random(minY, maxY)
+            attempts = attempts + 1
+            
+            local dx = math.abs(rx - bx)
+            local dy = math.abs(ry - by)
+            local isOffScreen = (dx > 210 or dy > 130)
+            
+            if isOffScreen and isSafeWater(rx, ry, 30) then
+                placed = true
+            end
+        end
+    end
+    
+    if placed then
+        table.insert(State.fish, {
+            x = rx, y = ry, baseX = rx, baseY = ry,
+            alive = true, size = size,
+            movePhase = math.random() * 6.28,
+            moveType = math.random(1, 3)
+        })
+    end
+end
+
 function initLittleGuy()
     local attempts = 0
     local minX, maxX = 200, 1200

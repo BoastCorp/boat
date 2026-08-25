@@ -474,6 +474,9 @@ function updatePhysics()
                                 caught = caught + 1
                                 totalEarned = totalEarned + fishVal
                                 table.insert(caughtFishList, { idx = idx, size = size, val = fishVal })
+                                
+                                -- Respawn a replacement fish of the same size off-screen
+                                respawnFish(size)
                             end
                         end
                     end
