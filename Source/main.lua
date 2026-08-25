@@ -395,7 +395,12 @@ function playdate.update()
         State.transition.progress = State.transition.progress + State.transition.speed
         if State.transition.progress >= 1.0 then
             if State.transition.phase == 1 then
-                State.currentScreen = State.transition.targetScreen
+                if State.transition.onMidpoint then
+                    State.transition.onMidpoint()
+                end
+                if State.transition.targetScreen then
+                    State.currentScreen = State.transition.targetScreen
+                end
                 State.transition.phase = 2
                 State.transition.progress = 0
             else

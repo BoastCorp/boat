@@ -71,13 +71,14 @@ State = {
     transition = { active = false }
 }
 
-function startTransition(targetScreen)
+function startTransition(targetScreen, onMidpoint)
     State.transition = {
         active = true,
         phase = 1,
         progress = 0,
         speed = 0.08, -- Adjust speed (0.08 = ~12 frames per phase)
-        targetScreen = targetScreen
+        targetScreen = targetScreen,
+        onMidpoint = onMidpoint
     }
 end
 

@@ -49,7 +49,9 @@ function handleGameInput()
             State.isPaused = false
             startTransition("dock")
         elseif playdate.buttonJustPressed(playdate.kButtonB) then
-            resetRound()
+            startTransition("game", function()
+                resetRound()
+            end)
         end
         return
     end
